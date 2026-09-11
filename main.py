@@ -1,25 +1,34 @@
 from browser.manager import BrowserManager
-from config import HEADLESS, GOOGLE_MAPS_URL, PAGE_TIMEOUT
+from config import (
+    HEADLESS,
+    PAGE_TIMEOUT,
+    SEARCH_LOCATION,
+    SEARCH_QUERY,
+)
+from scrapers.google_maps import GoogleMapsScraper
 
 
 def main():
     browser = BrowserManager(headless=HEADLESS)
+    scraper = GoogleMapsScraper(browser)
 
     try:
         print("Starting browser...")
 
-        page = browser.start()
+        browser.start()
 
-        print("Opening Google Maps...")
+        print("Searching Google Maps...")
+        print(f"Query: {SEARCH_QUERY}")
+        print(f"Location: {SEARCH_LOCATION}")
 
-        page.set_default_timeout(PAGE_TIMEOUT)
-        page.goto(
-            GOOGLE_MAPS_URL,
-            wait_until="domcontentloaded"
+        scraper.search(
+            query=SEARCH_QUERY,
+            location=SEARCH_LOCATION
         )
 
-        print("Google Maps opened successfully.")
-        print(f"Title: {page.title()}")
+        print("\nGoogle Maps search opened successfully.")
+        print(f"Title: {scraper.page.title()}")
+        print(f"URL: {scraper.page.url}")
 
         input("\nPress Enter to close the browser...")
 
@@ -27,7 +36,7 @@ def main():
         print(f"\nError: {error}")
 
     finally:
-        print("Closing browser...")
+        print("\nClosing browser...")
         browser.close()
         print("Browser closed.")
 
