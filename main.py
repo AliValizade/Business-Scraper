@@ -16,6 +16,7 @@ def main():
         print("Starting browser...")
 
         browser.start()
+        browser.page.set_default_timeout(PAGE_TIMEOUT)
 
         print("Searching Google Maps...")
         print(f"Query: {SEARCH_QUERY}")
@@ -29,6 +30,8 @@ def main():
         print("\nGoogle Maps search opened successfully.")
         print(f"Title: {scraper.page.title()}")
         print(f"URL: {scraper.page.url}")
+
+        scraper.inspect_results()
 
         input("\nPress Enter to close the browser...")
 
