@@ -99,6 +99,103 @@ class GoogleMapsScraper(BaseScraper):
 
         return href
 
+    def _extract_coordinates(self, google_maps_url):
+        if not google_maps_url:
+            return None, None
+
+        latitude = None
+        longitude = None
+
+        coordinate_match = re.search(
+            r'!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)',
+            google_maps_url
+        )
+
+        if coordinate_match:
+            try:
+                latitude = float(coordinate_match.group(1))
+                longitude = float(coordinate_match.group(2))
+            except ValueError:
+                pass
+
+        return latitude, longitude
+
+    def _extract_phone(self, card):
+        phone = None
+
+        phone_link = card.locator(
+            'a[href^="tel:"]'
+        ).first
+
+        if phone_link.count() > 0:
+            href = phone_link.get_attribute("href")
+
+            if href:
+                phone = href.replace(
+                    "tel:",
+                    "",
+                    1
+                ).strip()
+
+        if phone:
+            return phone
+
+        text = card.inner_text()
+
+        phone_patterns = [
+            r'\+98[\s\-()]*9\d{9}',
+            r'0098[\s\-()]*9\d{9}',
+            r'09\d{9}',
+            r'\+98[\s\-()]*\d{2,3}[\s\-()]*\d{7,8}',
+            r'0\d{2,3}[\s\-()]*\d{7,8}',
+        ]
+
+        for pattern in phone_patterns:
+            match = re.search(
+                pattern,
+                text
+            )
+
+            if match:
+                phone = match.group(0).strip()
+                break
+
+        return phone
+
+    def _extract_website(self, card):
+        website = None
+
+        links = card.locator("a")
+
+        link_count = links.count()
+
+        for index in range(link_count):
+            link = links.nth(index)
+
+            href = link.get_attribute("href")
+
+            if not href:
+                continue
+
+            href_lower = href.lower()
+
+            if href_lower.startswith("tel:"):
+                continue
+
+            if "/maps/" in href_lower:
+                continue
+
+            if "google.com" in href_lower:
+                continue
+
+            if href_lower.startswith(
+                ("http://", "https://")
+            ):
+                website = href
+                break
+
+        return website
+
     def _extract_business_from_card(self, card):
         lines = [
             line.strip()
@@ -225,11 +322,29 @@ class GoogleMapsScraper(BaseScraper):
         )
 
         # ----------------------------------------
+        # Coordinates
+        # ----------------------------------------
+
+        latitude, longitude = self._extract_coordinates(
+            google_maps_url
+        )
+
+        # ----------------------------------------
+        # Phone
+        # ----------------------------------------
+
+        phone = self._extract_phone(card)
+
+        # ----------------------------------------
+        # Website
+        # ----------------------------------------
+
+        website = self._extract_website(card)
+
+        # ----------------------------------------
         # Source ID
         # ----------------------------------------
 
-        # We intentionally do not guess or fabricate
-        # Google's internal place/source ID here.
         source_id = None
 
         # ----------------------------------------
@@ -240,8 +355,12 @@ class GoogleMapsScraper(BaseScraper):
             "name": name,
             "category": category,
             "address": address,
+            "phone": phone,
+            "website": website,
             "rating": rating,
             "reviews_count": reviews_count,
+            "latitude": latitude,
+            "longitude": longitude,
             "source": "google_maps",
             "source_id": source_id,
             "source_url": self.page.url,
