@@ -7,6 +7,12 @@ from scrapers.base import BaseScraper
 class GoogleMapsScraper(BaseScraper):
     BASE_SEARCH_URL = "https://www.google.com/maps/search/"
 
+    def __init__(self, browser_manager):
+        super().__init__(browser_manager)
+
+        self.search_keyword = None
+        self.search_location = None
+
     def search(self, query, location):
         search_query = f"{query} {location}".strip()
         encoded_query = quote_plus(search_query)
@@ -19,6 +25,9 @@ class GoogleMapsScraper(BaseScraper):
             )
 
         self.page = self.browser_manager.page
+
+        self.search_keyword = query
+        self.search_location = location
 
         self.page.goto(
             url,
@@ -53,6 +62,7 @@ class GoogleMapsScraper(BaseScraper):
 
     def inspect_results(self):
         results_container = self._get_results_container()
+
         result_cards = results_container.locator(
             'div[role="article"]'
         )
@@ -74,6 +84,21 @@ class GoogleMapsScraper(BaseScraper):
             "result_count": result_count,
         }
 
+    def _extract_business_url(self, card):
+        link = card.locator(
+            'a[href*="/maps/place/"]'
+        ).first
+
+        if link.count() == 0:
+            return None
+
+        href = link.get_attribute("href")
+
+        if not href:
+            return None
+
+        return href
+
     def _extract_business_from_card(self, card):
         lines = [
             line.strip()
@@ -83,9 +108,10 @@ class GoogleMapsScraper(BaseScraper):
 
         raw_text = "\n".join(lines)
 
-        # -------------------------
+        # ----------------------------------------
         # Name
-        # -------------------------
+        # ----------------------------------------
+
         name = None
 
         heading = card.locator(
@@ -105,9 +131,45 @@ class GoogleMapsScraper(BaseScraper):
                     "aria-label"
                 )
 
-        # -------------------------
+        # ----------------------------------------
+        # Category / Address
+        # ----------------------------------------
+
+        category = None
+        address = None
+
+        for line in lines:
+            if "·" not in line:
+                continue
+
+            parts = [
+                part.strip()
+                for part in line.split("·")
+                if part.strip()
+            ]
+
+            if len(parts) < 2:
+                continue
+
+            possible_category = parts[0]
+            possible_address = parts[-1]
+
+            if possible_category != name:
+                category = possible_category
+
+            if possible_address != name:
+                if not possible_address.lower().startswith(
+                    ("open", "closed")
+                ):
+                    address = possible_address
+
+            if category or address:
+                break
+
+        # ----------------------------------------
         # Rating
-        # -------------------------
+        # ----------------------------------------
+
         rating = None
 
         rating_match = re.search(
@@ -116,13 +178,17 @@ class GoogleMapsScraper(BaseScraper):
         )
 
         if rating_match:
-            rating = float(
-                rating_match.group(1).replace(",", ".")
-            )
+            try:
+                rating = float(
+                    rating_match.group(1).replace(",", ".")
+                )
+            except ValueError:
+                rating = None
 
-        # -------------------------
+        # ----------------------------------------
         # Reviews Count
-        # -------------------------
+        # ----------------------------------------
+
         reviews_count = None
 
         reviews_match = re.search(
@@ -150,42 +216,38 @@ class GoogleMapsScraper(BaseScraper):
             except ValueError:
                 reviews_count = None
 
-        # -------------------------
-        # Address
-        # -------------------------
-        address = None
+        # ----------------------------------------
+        # Google Maps URL
+        # ----------------------------------------
 
-        for line in lines:
-            if "·" not in line:
-                continue
+        google_maps_url = self._extract_business_url(
+            card
+        )
 
-            parts = [
-                part.strip()
-                for part in line.split("·")
-                if part.strip()
-            ]
+        # ----------------------------------------
+        # Source ID
+        # ----------------------------------------
 
-            if len(parts) < 2:
-                continue
+        # We intentionally do not guess or fabricate
+        # Google's internal place/source ID here.
+        source_id = None
 
-            possible_address = parts[-1]
-
-            if possible_address == name:
-                continue
-
-            if possible_address.lower().startswith(
-                ("open", "closed")
-            ):
-                continue
-
-            address = possible_address
-            break
+        # ----------------------------------------
+        # Structured Business Data
+        # ----------------------------------------
 
         return {
             "name": name,
+            "category": category,
             "address": address,
             "rating": rating,
             "reviews_count": reviews_count,
+            "source": "google_maps",
+            "source_id": source_id,
+            "source_url": self.page.url,
+            "google_maps_url": google_maps_url,
+            "search_keyword": self.search_keyword,
+            "city": self.search_location,
         }
 
     def extract_first_business(self):
@@ -212,7 +274,9 @@ class GoogleMapsScraper(BaseScraper):
             card = result_cards.nth(index)
 
             try:
-                business = self._extract_business_from_card(card)
+                business = self._extract_business_from_card(
+                    card
+                )
 
                 businesses.append(business)
 

@@ -48,25 +48,10 @@ def main():
             businesses,
             start=1
         ):
-            print(
-                f"\n[{index}] "
-                f"{business['name']}"
-            )
+            print(f"\n[{index}]")
 
-            print(
-                f"    Address: "
-                f"{business['address']}"
-            )
-
-            print(
-                f"    Rating: "
-                f"{business['rating']}"
-            )
-
-            print(
-                f"    Reviews: "
-                f"{business['reviews_count']}"
-            )
+            for key, value in business.items():
+                print(f"    {key}: {value}")
 
         input("\nPress Enter to close the browser...")
 
