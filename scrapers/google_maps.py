@@ -27,7 +27,7 @@ class GoogleMapsScraper(BaseScraper):
 
         return self.page
 
-    def _get_result_cards(self):
+    def _get_results_container(self):
         if self.page is None:
             raise RuntimeError(
                 "Search must be performed before extracting results."
@@ -42,17 +42,25 @@ class GoogleMapsScraper(BaseScraper):
             timeout=30000
         )
 
+        return results_container
+
+    def _get_result_cards(self):
+        results_container = self._get_results_container()
+
         return results_container.locator(
             'div[role="article"]'
         )
 
     def inspect_results(self):
-        result_cards = self._get_result_cards()
+        results_container = self._get_results_container()
+        result_cards = results_container.locator(
+            'div[role="article"]'
+        )
 
         result_count = result_cards.count()
 
         print("\n--- Google Maps Results Inspection ---")
-        print(f"Results container found: True")
+        print("Results container found: True")
         print(f"Business cards found: {result_count}")
 
         if result_count > 0:
@@ -67,9 +75,6 @@ class GoogleMapsScraper(BaseScraper):
         }
 
     def _extract_business_from_card(self, card):
-        # -------------------------
-        # Raw text
-        # -------------------------
         lines = [
             line.strip()
             for line in card.inner_text().splitlines()
@@ -216,6 +221,101 @@ class GoogleMapsScraper(BaseScraper):
                     f"Error extracting business "
                     f"{index + 1}: {error}"
                 )
+
+        return businesses
+
+    def scroll_results(
+        self,
+        max_results=30,
+        max_scroll_attempts=10,
+        wait_time=2000,
+    ):
+        results_container = self._get_results_container()
+
+        businesses = []
+        seen_names = set()
+
+        scroll_attempt = 0
+
+        print("\n--- Scrolling Google Maps Results ---")
+
+        while (
+            len(businesses) < max_results
+            and scroll_attempt < max_scroll_attempts
+        ):
+            result_cards = results_container.locator(
+                'div[role="article"]'
+            )
+
+            current_count = result_cards.count()
+
+            print(
+                f"Scroll {scroll_attempt + 1}: "
+                f"{current_count} cards loaded"
+            )
+
+            for index in range(current_count):
+                if len(businesses) >= max_results:
+                    break
+
+                try:
+                    card = result_cards.nth(index)
+
+                    business = self._extract_business_from_card(
+                        card
+                    )
+
+                    name = business.get("name")
+
+                    if not name:
+                        continue
+
+                    if name in seen_names:
+                        continue
+
+                    seen_names.add(name)
+                    businesses.append(business)
+
+                except Exception as error:
+                    print(
+                        f"Error extracting card "
+                        f"{index + 1}: {error}"
+                    )
+
+            if len(businesses) >= max_results:
+                break
+
+            previous_count = current_count
+
+            results_container.evaluate(
+                """
+                element => {
+                    element.scrollTop = element.scrollHeight;
+                }
+                """
+            )
+
+            self.page.wait_for_timeout(wait_time)
+
+            result_cards = results_container.locator(
+                'div[role="article"]'
+            )
+
+            new_count = result_cards.count()
+
+            if new_count == previous_count:
+                print(
+                    "No new results loaded. "
+                    "Stopping scroll."
+                )
+                break
+
+            scroll_attempt += 1
+
+        print(
+            f"\nTotal unique businesses collected: "
+            f"{len(businesses)}"
+        )
 
         return businesses
 

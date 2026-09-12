@@ -1,7 +1,10 @@
 from browser.manager import BrowserManager
 from config import (
     HEADLESS,
+    MAX_RESULTS,
+    MAX_SCROLL_ATTEMPTS,
     PAGE_TIMEOUT,
+    SCROLL_WAIT_TIME,
     SEARCH_LOCATION,
     SEARCH_QUERY,
 )
@@ -31,44 +34,39 @@ def main():
         print(f"Title: {scraper.page.title()}")
         print(f"URL: {scraper.page.url}")
 
-        result_info = scraper.inspect_results()
+        scraper.inspect_results()
 
-        if result_info["result_count"] > 0:
-            print("\n--- Extracting Businesses ---")
+        businesses = scraper.scroll_results(
+            max_results=MAX_RESULTS,
+            max_scroll_attempts=MAX_SCROLL_ATTEMPTS,
+            wait_time=SCROLL_WAIT_TIME,
+        )
 
-            businesses = scraper.extract_businesses()
+        print("\n--- Extracted Businesses ---")
 
+        for index, business in enumerate(
+            businesses,
+            start=1
+        ):
             print(
-                f"\nSuccessfully extracted "
-                f"{len(businesses)} businesses."
+                f"\n[{index}] "
+                f"{business['name']}"
             )
 
-            for index, business in enumerate(
-                businesses,
-                start=1
-            ):
-                print(
-                    f"\n[{index}] "
-                    f"{business['name']}"
-                )
+            print(
+                f"    Address: "
+                f"{business['address']}"
+            )
 
-                print(
-                    f"    Address: "
-                    f"{business['address']}"
-                )
+            print(
+                f"    Rating: "
+                f"{business['rating']}"
+            )
 
-                print(
-                    f"    Rating: "
-                    f"{business['rating']}"
-                )
-
-                print(
-                    f"    Reviews: "
-                    f"{business['reviews_count']}"
-                )
-
-        else:
-            print("\nNo business results found.")
+            print(
+                f"    Reviews: "
+                f"{business['reviews_count']}"
+            )
 
         input("\nPress Enter to close the browser...")
 
