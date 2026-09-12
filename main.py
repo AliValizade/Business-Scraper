@@ -34,18 +34,39 @@ def main():
         result_info = scraper.inspect_results()
 
         if result_info["result_count"] > 0:
-            print("\n--- Extracting First Business ---")
+            print("\n--- Extracting Businesses ---")
 
-            business = scraper.extract_first_business()
+            businesses = scraper.extract_businesses()
 
-            print("\nExtracted Business:")
-            print(f"Name: {business['name']}")
-            print(f"Address: {business['address']}")
-            print(f"Rating: {business['rating']}")
             print(
-                f"Reviews Count: "
-                f"{business['reviews_count']}"
+                f"\nSuccessfully extracted "
+                f"{len(businesses)} businesses."
             )
+
+            for index, business in enumerate(
+                businesses,
+                start=1
+            ):
+                print(
+                    f"\n[{index}] "
+                    f"{business['name']}"
+                )
+
+                print(
+                    f"    Address: "
+                    f"{business['address']}"
+                )
+
+                print(
+                    f"    Rating: "
+                    f"{business['rating']}"
+                )
+
+                print(
+                    f"    Reviews: "
+                    f"{business['reviews_count']}"
+                )
+
         else:
             print("\nNo business results found.")
 

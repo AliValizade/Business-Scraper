@@ -27,10 +27,10 @@ class GoogleMapsScraper(BaseScraper):
 
         return self.page
 
-    def inspect_results(self):
+    def _get_result_cards(self):
         if self.page is None:
             raise RuntimeError(
-                "Search must be performed before inspecting results."
+                "Search must be performed before extracting results."
             )
 
         results_container = self.page.locator(
@@ -42,17 +42,17 @@ class GoogleMapsScraper(BaseScraper):
             timeout=30000
         )
 
-        result_cards = results_container.locator(
+        return results_container.locator(
             'div[role="article"]'
         )
+
+    def inspect_results(self):
+        result_cards = self._get_result_cards()
 
         result_count = result_cards.count()
 
         print("\n--- Google Maps Results Inspection ---")
-        print(
-            f"Results container found: "
-            f"{results_container.count() > 0}"
-        )
+        print(f"Results container found: True")
         print(f"Business cards found: {result_count}")
 
         if result_count > 0:
@@ -62,54 +62,11 @@ class GoogleMapsScraper(BaseScraper):
             print(first_card.inner_text())
 
         return {
-            "container_found": results_container.count() > 0,
+            "container_found": True,
             "result_count": result_count,
         }
 
-    def extract_first_business(self):
-        if self.page is None:
-            raise RuntimeError(
-                "Search must be performed before extraction."
-            )
-
-        results_container = self.page.locator(
-            'div[role="feed"]'
-        )
-
-        results_container.wait_for(
-            state="visible",
-            timeout=30000
-        )
-
-        result_cards = results_container.locator(
-            'div[role="article"]'
-        )
-
-        if result_cards.count() == 0:
-            return None
-
-        card = result_cards.nth(0)
-
-        # -------------------------
-        # Name
-        # -------------------------
-        name = None
-
-        name_locator = card.locator(
-            'a[aria-label]'
-        ).first
-
-        if name_locator.count() > 0:
-            name = name_locator.get_attribute("aria-label")
-
-        if not name:
-            heading = card.locator(
-                '[role="heading"]'
-            ).first
-
-            if heading.count() > 0:
-                name = heading.inner_text().strip()
-
+    def _extract_business_from_card(self, card):
         # -------------------------
         # Raw text
         # -------------------------
@@ -120,6 +77,28 @@ class GoogleMapsScraper(BaseScraper):
         ]
 
         raw_text = "\n".join(lines)
+
+        # -------------------------
+        # Name
+        # -------------------------
+        name = None
+
+        heading = card.locator(
+            '[role="heading"]'
+        ).first
+
+        if heading.count() > 0:
+            name = heading.inner_text().strip()
+
+        if not name:
+            name_locator = card.locator(
+                'a[aria-label]'
+            ).first
+
+            if name_locator.count() > 0:
+                name = name_locator.get_attribute(
+                    "aria-label"
+                )
 
         # -------------------------
         # Rating
@@ -137,7 +116,7 @@ class GoogleMapsScraper(BaseScraper):
             )
 
         # -------------------------
-        # Reviews count
+        # Reviews Count
         # -------------------------
         reviews_count = None
 
@@ -172,35 +151,76 @@ class GoogleMapsScraper(BaseScraper):
         address = None
 
         for line in lines:
-            if "·" in line:
-                parts = [
-                    part.strip()
-                    for part in line.split("·")
-                    if part.strip()
-                ]
+            if "·" not in line:
+                continue
 
-                if len(parts) >= 2:
-                    possible_address = parts[-1]
+            parts = [
+                part.strip()
+                for part in line.split("·")
+                if part.strip()
+            ]
 
-                    if (
-                        possible_address != name
-                        and not possible_address.lower().startswith(
-                            ("open", "closed")
-                        )
-                    ):
-                        address = possible_address
-                        break
+            if len(parts) < 2:
+                continue
 
-        business = {
+            possible_address = parts[-1]
+
+            if possible_address == name:
+                continue
+
+            if possible_address.lower().startswith(
+                ("open", "closed")
+            ):
+                continue
+
+            address = possible_address
+            break
+
+        return {
             "name": name,
             "address": address,
             "rating": rating,
             "reviews_count": reviews_count,
         }
 
-        return business
+    def extract_first_business(self):
+        result_cards = self._get_result_cards()
+
+        if result_cards.count() == 0:
+            return None
+
+        return self._extract_business_from_card(
+            result_cards.nth(0)
+        )
+
+    def extract_businesses(self, limit=None):
+        result_cards = self._get_result_cards()
+
+        total_cards = result_cards.count()
+
+        if limit is not None:
+            total_cards = min(total_cards, limit)
+
+        businesses = []
+
+        for index in range(total_cards):
+            card = result_cards.nth(index)
+
+            try:
+                business = self._extract_business_from_card(card)
+
+                businesses.append(business)
+
+            except Exception as error:
+                print(
+                    f"Error extracting business "
+                    f"{index + 1}: {error}"
+                )
+
+        return businesses
 
     def scrape(self):
         raise NotImplementedError(
-            "Business extraction will be implemented in the next phase."
+            "Full scraping workflow will be implemented "
+            "in the next phase."
         )
