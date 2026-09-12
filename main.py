@@ -31,7 +31,23 @@ def main():
         print(f"Title: {scraper.page.title()}")
         print(f"URL: {scraper.page.url}")
 
-        scraper.inspect_results()
+        result_info = scraper.inspect_results()
+
+        if result_info["result_count"] > 0:
+            print("\n--- Extracting First Business ---")
+
+            business = scraper.extract_first_business()
+
+            print("\nExtracted Business:")
+            print(f"Name: {business['name']}")
+            print(f"Address: {business['address']}")
+            print(f"Rating: {business['rating']}")
+            print(
+                f"Reviews Count: "
+                f"{business['reviews_count']}"
+            )
+        else:
+            print("\nNo business results found.")
 
         input("\nPress Enter to close the browser...")
 
