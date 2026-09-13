@@ -3,6 +3,10 @@ from datetime import datetime, timezone
 from core.cleaner import BusinessCleaner
 from core.deduplicator import Deduplicator
 from core.models import Business, ScrapeRun
+from utils.logger import get_logger
+
+
+logger = get_logger(__name__)
 
 
 class ScrapePipeline:
@@ -31,9 +35,7 @@ class ScrapePipeline:
         self.session_factory = session_factory
 
         self.cleaner = cleaner or BusinessCleaner()
-        self.deduplicator = (
-            deduplicator or Deduplicator()
-        )
+        self.deduplicator = deduplicator or Deduplicator()
 
     def run(self, query, location):
         session = self.session_factory()
@@ -49,36 +51,54 @@ class ScrapePipeline:
         session.add(scrape_run)
         session.commit()
 
+        logger.info(
+            "Scrape run started | source=google_maps | "
+            "keyword=%s | location=%s | run_id=%s",
+            query,
+            location,
+            scrape_run.id,
+        )
+
         try:
             self.scraper.search(
                 query=query,
                 location=location,
             )
 
+            logger.info(
+                "Scraping started | run_id=%s",
+                scrape_run.id,
+            )
+
             businesses = self.scraper.scrape()
 
             scrape_run.total_found = len(businesses)
 
-            existing_businesses = (
-                session.query(Business).all()
+            logger.info(
+                "Scraping finished | run_id=%s | found=%s",
+                scrape_run.id,
+                scrape_run.total_found,
             )
+
+            existing_businesses = session.query(Business).all()
 
             existing_dicts = [
                 self._business_to_dict(business)
                 for business in existing_businesses
             ]
 
-            for raw_business in businesses:
+            for index, raw_business in enumerate(
+                businesses,
+                start=1,
+            ):
                 try:
                     cleaned_business = self.cleaner.clean(
                         raw_business
                     )
 
-                    duplicate = (
-                        self.deduplicator.find_duplicate(
-                            cleaned_business,
-                            existing_dicts,
-                        )
+                    duplicate = self.deduplicator.find_duplicate(
+                        cleaned_business,
+                        existing_dicts,
                     )
 
                     if duplicate is None:
@@ -92,23 +112,35 @@ class ScrapePipeline:
                         session.flush()
 
                         existing_dicts.append(
-                            self._business_to_dict(
-                                business
-                            )
+                            self._business_to_dict(business)
                         )
 
                         scrape_run.total_new += 1
 
+                        logger.debug(
+                            "Business inserted | index=%s | "
+                            "name=%s",
+                            index,
+                            cleaned_business.get("name"),
+                        )
+
                     else:
-                        existing_model = (
-                            self._find_model_by_dict(
-                                existing_businesses,
-                                duplicate,
-                            )
+                        existing_model = self._find_model_by_dict(
+                            existing_businesses,
+                            duplicate,
                         )
 
                         if existing_model is None:
                             scrape_run.total_errors += 1
+
+                            logger.error(
+                                "Duplicate detected but "
+                                "existing model not found | "
+                                "index=%s | name=%s",
+                                index,
+                                cleaned_business.get("name"),
+                            )
+
                             continue
 
                         changed = self._update_business(
@@ -118,16 +150,54 @@ class ScrapePipeline:
 
                         if changed:
                             scrape_run.total_updated += 1
+
+                            logger.debug(
+                                "Business updated | index=%s | "
+                                "name=%s",
+                                index,
+                                cleaned_business.get("name"),
+                            )
                         else:
                             scrape_run.total_duplicates += 1
 
-                except Exception:
+                            logger.debug(
+                                "Duplicate business skipped | "
+                                "index=%s | name=%s",
+                                index,
+                                cleaned_business.get("name"),
+                            )
+
+                except Exception as error:
                     scrape_run.total_errors += 1
+
+                    logger.exception(
+                        "Error processing business | "
+                        "index=%s | name=%s | error=%s",
+                        index,
+                        (
+                            raw_business.get("name")
+                            if isinstance(raw_business, dict)
+                            else None
+                        ),
+                        error,
+                    )
 
             scrape_run.status = "COMPLETED"
             scrape_run.finished_at = datetime.now(timezone.utc)
 
             session.commit()
+
+            logger.info(
+                "Scrape run completed | run_id=%s | "
+                "found=%s | new=%s | updated=%s | "
+                "duplicates=%s | errors=%s",
+                scrape_run.id,
+                scrape_run.total_found,
+                scrape_run.total_new,
+                scrape_run.total_updated,
+                scrape_run.total_duplicates,
+                scrape_run.total_errors,
+            )
 
             return {
                 "run_id": scrape_run.id,
@@ -135,9 +205,7 @@ class ScrapePipeline:
                 "total_found": scrape_run.total_found,
                 "total_new": scrape_run.total_new,
                 "total_updated": scrape_run.total_updated,
-                "total_duplicates": (
-                    scrape_run.total_duplicates
-                ),
+                "total_duplicates": scrape_run.total_duplicates,
                 "total_errors": scrape_run.total_errors,
             }
 
@@ -156,10 +224,21 @@ class ScrapePipeline:
 
             session.commit()
 
+            logger.exception(
+                "Scrape run failed | run_id=%s | error=%s",
+                scrape_run.id,
+                error,
+            )
+
             raise
 
         finally:
             session.close()
+
+            logger.debug(
+                "Database session closed | run_id=%s",
+                scrape_run.id,
+            )
 
     def _filter_business_fields(self, business):
         allowed_fields = {
@@ -219,10 +298,7 @@ class ScrapePipeline:
         target_dict,
     ):
         for model in models:
-            if (
-                self._business_to_dict(model)
-                == target_dict
-            ):
+            if self._business_to_dict(model) == target_dict:
                 return model
 
         return None
