@@ -503,7 +503,14 @@ class GoogleMapsScraper(BaseScraper):
         return businesses
 
     def scrape(self):
-        raise NotImplementedError(
-            "Full scraping workflow will be implemented "
-            "in the next phase."
+        from config import (
+            MAX_RESULTS,
+            MAX_SCROLL_ATTEMPTS,
+            SCROLL_WAIT_TIME,
+        )
+
+        return self.scroll_results(
+            max_results=MAX_RESULTS,
+            max_scroll_attempts=MAX_SCROLL_ATTEMPTS,
+            wait_time=SCROLL_WAIT_TIME,
         )
