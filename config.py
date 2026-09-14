@@ -6,12 +6,16 @@ PAGE_TIMEOUT = 30000
 
 GOOGLE_MAPS_URL = "https://www.google.com/maps"
 
-SEARCH_QUERY = "فست فود"
+# SEARCH_QUERY = "فست فود"
 
-SEARCH_LOCATION = "مشهد"
+# SEARCH_LOCATION = "مشهد"
 
 MAX_RESULTS = 30
 
 MAX_SCROLL_ATTEMPTS = 10
 
 SCROLL_WAIT_TIME = 2000
+
+RETRY_COUNT = 2
+
+RETRY_DELAY = 2

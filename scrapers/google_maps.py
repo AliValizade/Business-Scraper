@@ -5,6 +5,7 @@ from scrapers.base import BaseScraper
 from core.states import ScraperState
 from utils.logger import get_logger
 from utils.retry import retry
+from config import RETRY_COUNT, RETRY_DELAY
 
 
 logger = get_logger(__name__)
@@ -57,8 +58,8 @@ class GoogleMapsScraper(BaseScraper):
                     url,
                     wait_until="domcontentloaded",
                 ),
-                retries=2,
-                delay=2,
+                retries=RETRY_COUNT,
+                delay=RETRY_DELAY,
                 exceptions=(
                     TimeoutError,
                     PlaywrightTimeoutError,
