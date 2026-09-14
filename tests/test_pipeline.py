@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 
 from core.models import Base
 from core.pipeline import ScrapePipeline
+from core.request import ScrapeRequest
 
 
 class FakeScraper:
@@ -348,3 +349,144 @@ def test_pipeline_reports_progress():
     assert snapshot.errors == 0
 
     assert progress_reporter.get_percentage() == 100.0
+
+
+def test_pipeline_supports_multiple_keywords():
+    session_factory = create_test_session()
+
+    first_business = make_business(
+        name="Pizza Sara",
+        phone="+989123456789",
+    )
+
+    second_business = make_business(
+        name="Ace Burger",
+        phone="+989111111111",
+    )
+
+    scraper = FakeScraper(
+        [
+            first_business,
+            second_business,
+        ]
+    )
+
+    request = ScrapeRequest(
+        location="مشهد",
+        keywords=[
+            "فست فود",
+            "پیتزا",
+        ],
+    )
+
+    pipeline = ScrapePipeline(
+        scraper=scraper,
+        session_factory=session_factory,
+    )
+
+    result = pipeline.run(request=request)
+
+    assert result["status"] == "COMPLETED"
+    assert result["total_found"] == 4
+    assert result["total_new"] == 2
+    assert result["total_duplicates"] == 2
+    assert result["total_errors"] == 0
+
+    assert scraper.search_calls == [
+        {
+            "query": "فست فود",
+            "location": "مشهد",
+        },
+        {
+            "query": "پیتزا",
+            "location": "مشهد",
+        },
+    ]
+
+    session = session_factory()
+
+    from core.models import Business
+
+    assert session.query(Business).count() == 2
+
+    session.close()
+
+
+def test_pipeline_isolates_keyword_errors():
+    session_factory = create_test_session()
+
+    class KeywordFailingScraper(FakeScraper):
+        def search(self, query, location):
+            self.search_calls.append(
+                {
+                    "query": query,
+                    "location": location,
+                }
+            )
+
+            if query == "پیتزا":
+                raise TimeoutError(
+                    "temporary keyword failure"
+                )
+
+            self.current_query = query
+
+        def scrape(self):
+            if self.current_query == "فست فود":
+                return [
+                    make_business(
+                        name="Fast Food Sara",
+                        phone="+989123456789",
+                    )
+                ]
+
+            if self.current_query == "پروتئینی":
+                return [
+                    make_business(
+                        name="Protein Center",
+                        phone="+989111111111",
+                    )
+                ]
+            return []
+
+    scraper = KeywordFailingScraper([])
+    scraper.current_query = None
+
+    request = ScrapeRequest(
+        location="مشهد",
+        keywords=[
+            "فست فود",
+            "پیتزا",
+            "پروتئینی",
+        ],
+    )
+
+    pipeline = ScrapePipeline(
+        scraper=scraper,
+        session_factory=session_factory,
+    )
+
+    result = pipeline.run(request=request)
+
+    assert result["status"] == "COMPLETED"
+    assert result["total_found"] == 2
+    assert result["total_new"] == 2
+    assert result["total_errors"] == 1
+    assert result["total_duplicates"] == 0
+
+    assert scraper.search_calls == [
+        {
+            "query": "فست فود",
+            "location": "مشهد",
+        },
+        {
+            "query": "پیتزا",
+            "location": "مشهد",
+        },
+        {
+            "query": "پروتئینی",
+            "location": "مشهد",
+        },
+    ]
+
+

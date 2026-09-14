@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from core.cleaner import BusinessCleaner
 from core.deduplicator import Deduplicator
 from core.models import Business, ScrapeRun
+from core.request import ScrapeRequest
 from utils.logger import get_logger
 from utils.progress import ProgressReporter
 
@@ -42,13 +43,40 @@ class ScrapePipeline:
             progress_reporter or ProgressReporter()
         )
 
-    def run(self, query, location):
+    def run(
+        self,
+        query=None,
+        location=None,
+        request=None,
+    ):
+        if request is not None:
+            if not isinstance(request, ScrapeRequest):
+                raise TypeError(
+                    "request must be an instance of ScrapeRequest."
+                )
+
+            location = request.location
+            keywords = request.keywords
+
+        else:
+            if query is None:
+                raise ValueError(
+                    "query is required when request is not provided."
+                )
+
+            if location is None:
+                raise ValueError(
+                    "location is required when request is not provided."
+                )
+
+            keywords = (query,)
+
         session = self.session_factory()
 
         scrape_run = ScrapeRun(
             source="google_maps",
             city=location,
-            keyword=query,
+            keyword=", ".join(keywords),
             status="RUNNING",
             started_at=datetime.now(timezone.utc),
         )
@@ -58,33 +86,64 @@ class ScrapePipeline:
 
         logger.info(
             "Scrape run started | source=google_maps | "
-            "keyword=%s | location=%s | run_id=%s",
-            query,
+            "keywords=%s | location=%s | run_id=%s",
+            keywords,
             location,
             scrape_run.id,
         )
 
         try:
-            self.scraper.search(
-                query=query,
-                location=location,
-            )
+            all_businesses = []
 
-            logger.info(
-                "Scraping started | run_id=%s",
-                scrape_run.id,
-            )
+            for keyword in keywords:
+                logger.info(
+                    "Keyword scraping started | keyword=%s | "
+                    "location=%s | run_id=%s",
+                    keyword,
+                    location,
+                    scrape_run.id,
+                )
 
-            businesses = self.scraper.scrape()
+                try:
+                    self.scraper.search(
+                        query=keyword,
+                        location=location,
+                    )
 
-            scrape_run.total_found = len(businesses)
+                    businesses = self.scraper.scrape()
+
+                    logger.info(
+                        "Keyword scraping finished | "
+                        "keyword=%s | found=%s | run_id=%s",
+                        keyword,
+                        len(businesses),
+                        scrape_run.id,
+                    )
+
+                    all_businesses.extend(businesses)
+
+                except Exception as error:
+                    scrape_run.total_errors += 1
+
+                    logger.exception(
+                        "Keyword scraping failed | "
+                        "keyword=%s | location=%s | "
+                        "run_id=%s | error=%s",
+                        keyword,
+                        location,
+                        scrape_run.id,
+                        error,
+                    )
+
+            scrape_run.total_found = len(all_businesses)
 
             self.progress_reporter.start(
-                total=len(businesses)
+                total=len(all_businesses)
             )
 
             logger.info(
-                "Scraping finished | run_id=%s | found=%s",
+                "All keywords scraped | run_id=%s | "
+                "total_found=%s",
                 scrape_run.id,
                 scrape_run.total_found,
             )
@@ -97,7 +156,7 @@ class ScrapePipeline:
             ]
 
             for index, raw_business in enumerate(
-                businesses,
+                all_businesses,
                 start=1,
             ):
                 try:
@@ -120,12 +179,19 @@ class ScrapePipeline:
                         session.add(business)
                         session.flush()
 
+                        existing_dict = self._business_to_dict(
+                            business
+                        )
+
                         existing_dicts.append(
-                            self._business_to_dict(business)
+                            existing_dict
+                        )
+
+                        existing_businesses.append(
+                            business
                         )
 
                         scrape_run.total_new += 1
-
                         self.progress_reporter.increment_new()
 
                     else:
@@ -176,6 +242,7 @@ class ScrapePipeline:
                         ),
                         error,
                     )
+
                 finally:
                     self.progress_reporter.increment_processed()
 
@@ -218,7 +285,6 @@ class ScrapePipeline:
             scrape_run.finished_at = datetime.now(timezone.utc)
             scrape_run.error_message = str(error)
             scrape_run.total_errors += 1
-            self.progress_reporter.increment_errors()
 
             session.commit()
 
@@ -237,7 +303,7 @@ class ScrapePipeline:
                 "Database session closed | run_id=%s",
                 scrape_run.id,
             )
-
+            
     def _filter_business_fields(self, business):
         allowed_fields = {
             "name",
