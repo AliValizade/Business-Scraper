@@ -4,6 +4,7 @@ from core.cleaner import BusinessCleaner
 from core.deduplicator import Deduplicator
 from core.models import Business, ScrapeRun
 from utils.logger import get_logger
+from utils.progress import ProgressReporter
 
 
 logger = get_logger(__name__)
@@ -30,12 +31,16 @@ class ScrapePipeline:
         session_factory,
         cleaner=None,
         deduplicator=None,
+        progress_reporter=None,
     ):
         self.scraper = scraper
         self.session_factory = session_factory
 
         self.cleaner = cleaner or BusinessCleaner()
         self.deduplicator = deduplicator or Deduplicator()
+        self.progress_reporter = (
+            progress_reporter or ProgressReporter()
+        )
 
     def run(self, query, location):
         session = self.session_factory()
@@ -73,6 +78,10 @@ class ScrapePipeline:
             businesses = self.scraper.scrape()
 
             scrape_run.total_found = len(businesses)
+
+            self.progress_reporter.start(
+                total=len(businesses)
+            )
 
             logger.info(
                 "Scraping finished | run_id=%s | found=%s",
@@ -117,12 +126,7 @@ class ScrapePipeline:
 
                         scrape_run.total_new += 1
 
-                        logger.debug(
-                            "Business inserted | index=%s | "
-                            "name=%s",
-                            index,
-                            cleaned_business.get("name"),
-                        )
+                        self.progress_reporter.increment_new()
 
                     else:
                         existing_model = self._find_model_by_dict(
@@ -132,6 +136,7 @@ class ScrapePipeline:
 
                         if existing_model is None:
                             scrape_run.total_errors += 1
+                            self.progress_reporter.increment_errors()
 
                             logger.error(
                                 "Duplicate detected but "
@@ -150,25 +155,15 @@ class ScrapePipeline:
 
                         if changed:
                             scrape_run.total_updated += 1
+                            self.progress_reporter.increment_updated()
 
-                            logger.debug(
-                                "Business updated | index=%s | "
-                                "name=%s",
-                                index,
-                                cleaned_business.get("name"),
-                            )
                         else:
                             scrape_run.total_duplicates += 1
-
-                            logger.debug(
-                                "Duplicate business skipped | "
-                                "index=%s | name=%s",
-                                index,
-                                cleaned_business.get("name"),
-                            )
+                            self.progress_reporter.increment_duplicates()
 
                 except Exception as error:
                     scrape_run.total_errors += 1
+                    self.progress_reporter.increment_errors()
 
                     logger.exception(
                         "Error processing business | "
@@ -181,6 +176,8 @@ class ScrapePipeline:
                         ),
                         error,
                     )
+                finally:
+                    self.progress_reporter.increment_processed()
 
             scrape_run.status = "COMPLETED"
             scrape_run.finished_at = datetime.now(timezone.utc)
@@ -221,6 +218,7 @@ class ScrapePipeline:
             scrape_run.finished_at = datetime.now(timezone.utc)
             scrape_run.error_message = str(error)
             scrape_run.total_errors += 1
+            self.progress_reporter.increment_errors()
 
             session.commit()
 

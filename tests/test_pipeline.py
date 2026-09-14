@@ -303,3 +303,48 @@ def test_pipeline_isolates_business_processing_errors():
     }
 
     session.close()
+
+
+def test_pipeline_reports_progress():
+    session_factory = create_test_session()
+
+    businesses = [
+        make_business(
+            name="Pizza Sara",
+            phone="+989123456789",
+        ),
+        make_business(
+            name="Ace Burger",
+            phone="+989111111111",
+        ),
+    ]
+
+    scraper = FakeScraper(businesses)
+
+    from utils.progress import ProgressReporter
+
+    progress_reporter = ProgressReporter()
+
+    pipeline = ScrapePipeline(
+        scraper=scraper,
+        session_factory=session_factory,
+        progress_reporter=progress_reporter,
+    )
+
+    result = pipeline.run(
+        query="فست فود",
+        location="مشهد",
+    )
+
+    snapshot = progress_reporter.get_snapshot()
+
+    assert result["total_found"] == 2
+
+    assert snapshot.total == 2
+    assert snapshot.processed == 2
+    assert snapshot.new == 2
+    assert snapshot.updated == 0
+    assert snapshot.duplicates == 0
+    assert snapshot.errors == 0
+
+    assert progress_reporter.get_percentage() == 100.0
