@@ -7,6 +7,8 @@ from core.models import Base
 from core.pipeline import ScrapePipeline
 from core.request import ScrapeRequest
 
+from utils.progress import ProgressReporter
+
 
 class FakeScraper:
     def __init__(self, businesses):
@@ -489,4 +491,50 @@ def test_pipeline_isolates_keyword_errors():
         },
     ]
 
+
+def test_pipeline_reports_keyword_progress():
+    session_factory = create_test_session()
+
+    first_business = make_business(
+        name="Fast Food Sara",
+        phone="+989123456789",
+    )
+
+    second_business = make_business(
+        name="Pizza Center",
+        phone="+989111111111",
+    )
+
+    scraper = FakeScraper(
+        [
+            first_business,
+            second_business,
+        ]
+    )
+
+    reporter = ProgressReporter()
+
+    request = ScrapeRequest(
+        location="مشهد",
+        keywords=[
+            "فست فود",
+            "پیتزا",
+        ],
+    )
+
+    pipeline = ScrapePipeline(
+        scraper=scraper,
+        session_factory=session_factory,
+        progress_reporter=reporter,
+    )
+
+    result = pipeline.run(request=request)
+
+    assert result["status"] == "COMPLETED"
+
+    snapshot = reporter.get_snapshot()
+
+    assert snapshot.current_keyword == "پیتزا"
+    assert snapshot.keyword_index == 2
+    assert snapshot.total_keywords == 2
 

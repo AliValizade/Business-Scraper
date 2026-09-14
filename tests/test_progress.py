@@ -1,7 +1,4 @@
-from utils.progress import (
-    ProgressReporter,
-    ProgressSnapshot,
-)
+from utils.progress import ProgressReporter, ProgressSnapshot
 
 
 def test_progress_starts_with_zero_values():
@@ -100,3 +97,45 @@ def test_get_snapshot_returns_independent_object():
 
     assert snapshot.processed == 1
     assert reporter.get_snapshot().processed == 2
+
+
+def test_progress_supports_keyword_context():
+    reporter = ProgressReporter()
+
+    reporter.start(
+        total=50,
+        current_keyword="فست فود",
+        keyword_index=1,
+        total_keywords=3,
+    )
+
+    snapshot = reporter.get_snapshot()
+
+    assert snapshot.total == 50
+    assert snapshot.current_keyword == "فست فود"
+    assert snapshot.keyword_index == 1
+    assert snapshot.total_keywords == 3
+
+
+def test_progress_can_switch_keyword():
+    reporter = ProgressReporter()
+
+    reporter.start(
+        total=20,
+        current_keyword="فست فود",
+        keyword_index=1,
+        total_keywords=3,
+    )
+
+    reporter.set_keyword(
+        keyword="پیتزا",
+        keyword_index=2,
+        total_keywords=3,
+    )
+
+    snapshot = reporter.get_snapshot()
+
+    assert snapshot.current_keyword == "پیتزا"
+    assert snapshot.keyword_index == 2
+    assert snapshot.total_keywords == 3
+

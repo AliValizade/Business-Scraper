@@ -10,22 +10,44 @@ class ProgressSnapshot:
     duplicates: int = 0
     errors: int = 0
 
+    current_keyword: str | None = None
+    keyword_index: int = 0
+    total_keywords: int = 0
+
 
 class ProgressReporter:
     def __init__(self):
         self.snapshot = ProgressSnapshot()
 
-    def start(self, total=0):
-        self.snapshot = ProgressSnapshot(total=total)
+    def start(
+        self,
+        total=0,
+        current_keyword=None,
+        keyword_index=0,
+        total_keywords=0,
+    ):
+        self.snapshot = ProgressSnapshot(
+            total=total,
+            current_keyword=current_keyword,
+            keyword_index=keyword_index,
+            total_keywords=total_keywords,
+        )
 
     def update(
         self,
+        total=None,
         processed=None,
         new=None,
         updated=None,
         duplicates=None,
         errors=None,
+        current_keyword=None,
+        keyword_index=None,
+        total_keywords=None,
     ):
+        if total is not None:
+            self.snapshot.total = total
+
         if processed is not None:
             self.snapshot.processed = processed
 
@@ -40,6 +62,25 @@ class ProgressReporter:
 
         if errors is not None:
             self.snapshot.errors = errors
+
+        if current_keyword is not None:
+            self.snapshot.current_keyword = current_keyword
+
+        if keyword_index is not None:
+            self.snapshot.keyword_index = keyword_index
+
+        if total_keywords is not None:
+            self.snapshot.total_keywords = total_keywords
+
+    def set_keyword(
+        self,
+        keyword,
+        keyword_index,
+        total_keywords,
+    ):
+        self.snapshot.current_keyword = keyword
+        self.snapshot.keyword_index = keyword_index
+        self.snapshot.total_keywords = total_keywords
 
     def increment_processed(self):
         self.snapshot.processed += 1
@@ -64,6 +105,9 @@ class ProgressReporter:
             updated=self.snapshot.updated,
             duplicates=self.snapshot.duplicates,
             errors=self.snapshot.errors,
+            current_keyword=self.snapshot.current_keyword,
+            keyword_index=self.snapshot.keyword_index,
+            total_keywords=self.snapshot.total_keywords,
         )
 
     def get_percentage(self):
@@ -73,4 +117,9 @@ class ProgressReporter:
         return (
             self.snapshot.processed
             / self.snapshot.total
-        ) * 100
+            * 100
+        )
+
+
+
+    

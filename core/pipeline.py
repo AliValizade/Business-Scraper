@@ -95,7 +95,21 @@ class ScrapePipeline:
         try:
             all_businesses = []
 
-            for keyword in keywords:
+            self.progress_reporter.start(
+                total=0,
+                total_keywords=len(keywords),
+            )
+
+            for keyword_index, keyword in enumerate(
+                keywords,
+                start=1,
+            ):
+                self.progress_reporter.set_keyword(
+                    keyword=keyword,
+                    keyword_index=keyword_index,
+                    total_keywords=len(keywords),
+                )
+
                 logger.info(
                     "Keyword scraping started | keyword=%s | "
                     "location=%s | run_id=%s",
@@ -137,8 +151,8 @@ class ScrapePipeline:
 
             scrape_run.total_found = len(all_businesses)
 
-            self.progress_reporter.start(
-                total=len(all_businesses)
+            self.progress_reporter.update(
+                total=len(all_businesses),
             )
 
             logger.info(
