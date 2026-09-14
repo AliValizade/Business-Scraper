@@ -245,3 +245,61 @@ def test_pipeline_searches_with_correct_query_and_location():
             "location": "مشهد",
         }
     ]
+
+
+def test_pipeline_isolates_business_processing_errors():
+    session_factory = create_test_session()
+
+    valid_business_1 = make_business(
+        name="Pizza Sara",
+        phone="+989123456789",
+    )
+
+    invalid_business = None
+
+    valid_business_2 = make_business(
+        name="Ace Burger",
+        phone="+989111111111",
+    )
+
+    scraper = FakeScraper(
+        [
+            valid_business_1,
+            invalid_business,
+            valid_business_2,
+        ]
+    )
+
+    pipeline = ScrapePipeline(
+        scraper=scraper,
+        session_factory=session_factory,
+    )
+
+    result = pipeline.run(
+        query="فست فود",
+        location="مشهد",
+    )
+
+    assert result["status"] == "COMPLETED"
+    assert result["total_found"] == 3
+    assert result["total_new"] == 2
+    assert result["total_updated"] == 0
+    assert result["total_duplicates"] == 0
+    assert result["total_errors"] == 1
+
+    session = session_factory()
+
+    from core.models import Business
+
+    businesses = session.query(Business).all()
+
+    assert len(businesses) == 2
+
+    names = {business.name for business in businesses}
+
+    assert names == {
+        "Pizza Sara",
+        "Ace Burger",
+    }
+
+    session.close()
