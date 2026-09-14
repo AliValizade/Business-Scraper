@@ -1,0 +1,12 @@
+from enum import Enum
+
+
+class ScraperState(str, Enum):
+    INITIALIZING = "INITIALIZING"
+    SEARCHING = "SEARCHING"
+    LOADING = "LOADING"
+    SCROLLING = "SCROLLING"
+    EXTRACTING = "EXTRACTING"
+    PROCESSING = "PROCESSING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"

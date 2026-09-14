@@ -1,8 +1,11 @@
 import re
 from urllib.parse import quote_plus
-
 from scrapers.base import BaseScraper
+from core.states import ScraperState
+from utils.logger import get_logger
 
+
+logger = get_logger(__name__)
 
 class GoogleMapsScraper(BaseScraper):
     BASE_SEARCH_URL = "https://www.google.com/maps/search/"
@@ -16,25 +19,60 @@ class GoogleMapsScraper(BaseScraper):
     def search(self, query, location):
         search_query = f"{query} {location}".strip()
         encoded_query = quote_plus(search_query)
-
         url = f"{self.BASE_SEARCH_URL}?api=1&query={encoded_query}"
 
         if self.browser_manager.page is None:
+            self.set_state(ScraperState.FAILED)
+
+            logger.error(
+                "Browser page is not available | query=%s | location=%s",
+                query,
+                location,
+            )
+
             raise RuntimeError(
                 "BrowserManager must be started before searching."
             )
+
+        self.set_state(ScraperState.SEARCHING)
+
+        logger.info(
+            "Google Maps search started | query=%s | location=%s",
+            query,
+            location,
+        )
 
         self.page = self.browser_manager.page
 
         self.search_keyword = query
         self.search_location = location
 
-        self.page.goto(
-            url,
-            wait_until="domcontentloaded"
-        )
+        try:
+            self.set_state(ScraperState.LOADING)
 
-        return self.page
+            self.page.goto(
+                url,
+                wait_until="domcontentloaded",
+            )
+
+            logger.info(
+                "Google Maps page loaded | url=%s",
+                self.page.url,
+            )
+
+            return self.page
+
+        except Exception:
+            self.set_state(ScraperState.FAILED)
+
+            logger.exception(
+                "Google Maps page load failed | "
+                "query=%s | location=%s",
+                query,
+                location,
+            )
+
+            raise
 
     def _get_results_container(self):
         if self.page is None:
@@ -415,6 +453,15 @@ class GoogleMapsScraper(BaseScraper):
     ):
         results_container = self._get_results_container()
 
+        self.set_state(ScraperState.SCROLLING)
+
+        logger.info(
+            "Google Maps result scrolling started | "
+            "max_results=%s | max_scroll_attempts=%s",
+            max_results,
+            max_scroll_attempts,
+        )
+
         businesses = []
         seen_names = set()
 
@@ -436,6 +483,8 @@ class GoogleMapsScraper(BaseScraper):
                 f"Scroll {scroll_attempt + 1}: "
                 f"{current_count} cards loaded"
             )
+
+            self.set_state(ScraperState.EXTRACTING)
 
             for index in range(current_count):
                 if len(businesses) >= max_results:
@@ -500,6 +549,14 @@ class GoogleMapsScraper(BaseScraper):
             f"{len(businesses)}"
         )
 
+        self.set_state(ScraperState.COMPLETED)
+
+        logger.info(
+            "Google Maps scraping completed | "
+            "businesses_collected=%s",
+            len(businesses),
+        )
+        
         return businesses
 
     def scrape(self):
