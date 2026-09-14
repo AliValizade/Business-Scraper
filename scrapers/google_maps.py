@@ -1,8 +1,10 @@
 import re
+from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from urllib.parse import quote_plus
 from scrapers.base import BaseScraper
 from core.states import ScraperState
 from utils.logger import get_logger
+from utils.retry import retry
 
 
 logger = get_logger(__name__)
@@ -50,9 +52,17 @@ class GoogleMapsScraper(BaseScraper):
         try:
             self.set_state(ScraperState.LOADING)
 
-            self.page.goto(
-                url,
-                wait_until="domcontentloaded",
+            retry(
+                lambda: self.page.goto(
+                    url,
+                    wait_until="domcontentloaded",
+                ),
+                retries=2,
+                delay=2,
+                exceptions=(
+                    TimeoutError,
+                    PlaywrightTimeoutError,
+                ),
             )
 
             logger.info(
