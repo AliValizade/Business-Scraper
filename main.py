@@ -3,7 +3,9 @@ import sys
 from app.composition import create_application
 from browser.manager import BrowserManager
 from cli.commands import (
+    format_export_result,
     format_scrape_result,
+    run_export_command,
     run_scrape_command,
 )
 from cli.parser import create_parser
@@ -11,8 +13,6 @@ from database.database import SessionLocal
 
 
 def create_cli_application(source):
-    """Create the application used by the CLI."""
-
     browser_manager = BrowserManager()
 
     return create_application(
@@ -23,8 +23,6 @@ def create_cli_application(source):
 
 
 def main(argv=None):
-    """Run the command-line application."""
-
     parser = create_parser()
 
     args = parser.parse_args(argv)
@@ -39,8 +37,28 @@ def main(argv=None):
             application,
         )
 
+        print(format_scrape_result(result))
+
+        return result
+
+    if args.command == "export":
+        application = create_cli_application(
+            source="google_maps",
+        )
+
+        data = application.get_businesses()
+
+        result = run_export_command(
+            args,
+            application,
+            data,
+        )
+
         print(
-            format_scrape_result(result)
+            format_export_result(
+                result,
+                args.format_name,
+            )
         )
 
         return result

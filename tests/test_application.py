@@ -127,3 +127,83 @@ def test_application_preserves_registry_and_factory():
     assert application.registry is registry
     assert application.factory is factory
 
+
+def test_application_export_delegates_to_export_service(tmp_path):
+    class FakeExportService:
+        def __init__(self):
+            self.calls = []
+
+        def export(
+            self,
+            data,
+            output_path,
+            format_name,
+        ):
+            self.calls.append(
+                {
+                    "data": data,
+                    "output_path": output_path,
+                    "format_name": format_name,
+                }
+            )
+
+            return output_path
+
+    class FakePipeline:
+        def run(self, request):
+            return {"status": "COMPLETED"}
+
+    export_service = FakeExportService()
+
+    from app.application import Application
+
+    application = Application(
+        pipeline=FakePipeline(),
+        export_service=export_service,
+    )
+
+    data = [
+        {"name": "Pizza Sara"},
+    ]
+
+    output_path = tmp_path / "businesses.csv"
+
+    result = application.export(
+        data=data,
+        output_path=output_path,
+        format_name="csv",
+    )
+
+    assert result == output_path
+    assert export_service.calls == [
+        {
+            "data": data,
+            "output_path": output_path,
+            "format_name": "csv",
+        }
+    ]
+
+
+def test_application_export_requires_export_service():
+    class FakePipeline:
+        def run(self, request):
+            return {"status": "COMPLETED"}
+
+    from app.application import Application
+
+    application = Application(
+        pipeline=FakePipeline(),
+    )
+
+    import pytest
+
+    with pytest.raises(
+        ValueError,
+        match="export_service is not configured",
+    ):
+        application.export(
+            data=[],
+            output_path="output/test.csv",
+            format_name="csv",
+        )
+

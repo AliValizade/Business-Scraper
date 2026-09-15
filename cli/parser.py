@@ -2,13 +2,9 @@ import argparse
 
 
 def create_parser():
-    """Create the command-line argument parser."""
-
     parser = argparse.ArgumentParser(
         prog="business-scraper",
-        description=(
-            "Modular business web scraper."
-        ),
+        description="Modular business web scraper.",
     )
 
     subparsers = parser.add_subparsers(
@@ -18,22 +14,19 @@ def create_parser():
 
     scrape_parser = subparsers.add_parser(
         "scrape",
-        help="Scrape businesses from a source.",
+        help="Scrape business data.",
     )
 
     scrape_parser.add_argument(
         "--source",
         default="google_maps",
-        help=(
-            "Scraping source. "
-            "Default: google_maps"
-        ),
+        help="Scraper source.",
     )
 
     scrape_parser.add_argument(
         "--location",
         required=True,
-        help="City or geographic location.",
+        help="Search location.",
     )
 
     scrape_parser.add_argument(
@@ -41,17 +34,34 @@ def create_parser():
         action="append",
         required=True,
         dest="keywords",
-        help=(
-            "Search keyword. "
-            "Repeat this option for multiple keywords."
-        ),
+        help="Search keyword. Can be specified multiple times.",
     )
 
     scrape_parser.add_argument(
         "--max-results",
         type=int,
         default=None,
-        help="Maximum number of results to scrape.",
+        help="Maximum number of results for the entire request.",
+    )
+
+    export_parser = subparsers.add_parser(
+        "export",
+        help="Export business data.",
+    )
+
+    export_parser.add_argument(
+        "--format",
+        required=True,
+        choices=["csv", "json", "excel"],
+        dest="format_name",
+        help="Export format.",
+    )
+
+    export_parser.add_argument(
+        "--output",
+        required=True,
+        dest="output_path",
+        help="Output file path.",
     )
 
     return parser

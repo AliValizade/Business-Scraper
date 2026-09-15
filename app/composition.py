@@ -1,7 +1,10 @@
 from core.pipeline import ScrapePipeline
 from scrapers.default_registry import create_default_registry
 from scrapers.factory import ScraperFactory
-
+from exporters.csv_exporter import CSVExporter
+from exporters.excel_exporter import ExcelExporter
+from exporters.json_exporter import JSONExporter
+from exporters.service import ExportService
 from app.application import Application
 
 
@@ -41,6 +44,14 @@ def create_application(
         registry=registry,
     )
 
+    export_service = ExportService(
+        exporters={
+            "csv": CSVExporter(),
+            "json": JSONExporter(),
+            "excel": ExcelExporter(),
+        }
+    )
+
     final_scraper_kwargs = dict(
         scraper_kwargs or {}
     )
@@ -61,5 +72,7 @@ def create_application(
         pipeline=pipeline,
         registry=registry,
         factory=factory,
+        export_service=export_service,
+        session_factory=session_factory,
     )
 
