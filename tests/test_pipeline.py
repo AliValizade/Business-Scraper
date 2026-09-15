@@ -784,3 +784,99 @@ def test_pipeline_requires_scraper_factory_or_registry():
             session_factory=session_factory,
         )
 
+
+def test_pipeline_respects_max_results_across_keywords():
+    session_factory = create_test_session()
+
+    first_businesses = [
+        make_business(
+            name="Pizza Sara",
+            phone="+989123456789",
+        ),
+        make_business(
+            name="Pizza Center",
+            phone="+989111111111",
+        ),
+        make_business(
+            name="Pizza House",
+            phone="+989122222222",
+        ),
+    ]
+
+    second_businesses = [
+        make_business(
+            name="Fast Food Sara",
+            phone="+989133333333",
+        ),
+        make_business(
+            name="Fast Food Center",
+            phone="+989144444444",
+        ),
+    ]
+
+    third_businesses = [
+        make_business(
+            name="Burger House",
+            phone="+989155555555",
+        ),
+    ]
+
+    class LimitedFakeScraper(FakeScraper):
+        def search(self, query, location):
+            self.current_query = query
+            super().search(query, location)
+            
+        def scrape(self):
+            if self.current_query == "پیتزا":
+                return first_businesses
+
+            if self.current_query == "فست فود":
+                return second_businesses
+
+            if self.current_query == "برگر":
+                return third_businesses
+
+            return []
+
+    scraper = LimitedFakeScraper([])
+
+    request = ScrapeRequest(
+        location="مشهد",
+        keywords=[
+            "پیتزا",
+            "فست فود",
+            "برگر",
+        ],
+        max_results=5,
+    )
+
+    pipeline = ScrapePipeline(
+        scraper=scraper,
+        session_factory=session_factory,
+    )
+
+    result = pipeline.run(request=request)
+
+    assert result["status"] == "COMPLETED"
+    assert result["total_found"] == 5
+
+    assert scraper.search_calls == [
+        {
+            "query": "پیتزا",
+            "location": "مشهد",
+        },
+        {
+            "query": "فست فود",
+            "location": "مشهد",
+        },
+    ]
+
+    session = session_factory()
+
+    assert session.query(Business).count() == 5
+
+    session.close()
+
+
+
+

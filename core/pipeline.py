@@ -88,6 +88,7 @@ class ScrapePipeline:
 
             location = request.location
             keywords = request.keywords
+            max_results = request.max_results
 
         else:
             if query is None:
@@ -101,6 +102,7 @@ class ScrapePipeline:
                 )
 
             keywords = (query,)
+            max_results = None
 
         session = self.session_factory()
 
@@ -136,6 +138,18 @@ class ScrapePipeline:
                 keywords,
                 start=1,
             ):
+                if (
+                    max_results is not None
+                    and len(all_businesses) >= max_results
+                ):
+                    logger.info(
+                        "Maximum results reached | "
+                        "max_results=%s | run_id=%s",
+                        max_results,
+                        scrape_run.id,
+                    )
+                    break
+
                 self.progress_reporter.set_keyword(
                     keyword=keyword,
                     keyword_index=keyword_index,
@@ -157,6 +171,15 @@ class ScrapePipeline:
                     )
 
                     businesses = self.scraper.scrape()
+
+                    remaining = (
+                        max_results - len(all_businesses)
+                        if max_results is not None
+                        else None
+                    )
+
+                    if remaining is not None:
+                        businesses = businesses[:remaining]
 
                     logger.info(
                         "Keyword scraping finished | "
@@ -181,11 +204,11 @@ class ScrapePipeline:
                         error,
                     )
 
-            scrape_run.total_found = len(all_businesses)
+                scrape_run.total_found = len(all_businesses)
 
-            self.progress_reporter.update(
-                total=len(all_businesses),
-            )
+                self.progress_reporter.update(
+                    total=len(all_businesses),
+                )
 
             logger.info(
                 "All keywords scraped | run_id=%s | "
