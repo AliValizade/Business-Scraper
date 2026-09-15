@@ -6,6 +6,7 @@ from core.models import Business, ScrapeRun
 from core.request import ScrapeRequest
 from utils.logger import get_logger
 from utils.progress import ProgressReporter
+from scrapers.factory import ScraperFactory
 
 
 logger = get_logger(__name__)
@@ -36,13 +37,11 @@ class ScrapePipeline:
         registry=None,
         source="google_maps",
         scraper_kwargs=None,
+        factory=None,
     ):
         self.session_factory = session_factory
-
         self.cleaner = cleaner or BusinessCleaner()
-        self.deduplicator = (
-            deduplicator or Deduplicator()
-        )
+        self.deduplicator = deduplicator or Deduplicator()
         self.progress_reporter = (
             progress_reporter or ProgressReporter()
         )
@@ -50,19 +49,29 @@ class ScrapePipeline:
         self.registry = registry
         self.source = source
         self.scraper_kwargs = scraper_kwargs or {}
+        self.factory = factory
 
         if scraper is not None:
             self.scraper = scraper
 
+        elif factory is not None:
+            self.scraper = factory.create(
+                source,
+                **self.scraper_kwargs,
+            )
+
         elif registry is not None:
-            self.scraper = registry.create(
+            self.factory = ScraperFactory(registry)
+
+            self.scraper = self.factory.create(
                 source,
                 **self.scraper_kwargs,
             )
 
         else:
             raise ValueError(
-                "Either scraper or registry must be provided."
+                "Either scraper, factory, or registry "
+                "must be provided."
             )
 
     def run(

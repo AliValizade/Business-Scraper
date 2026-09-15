@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+
 import pytest
 
 from sqlalchemy import create_engine
@@ -11,6 +12,19 @@ from core.request import ScrapeRequest
 from utils.progress import ProgressReporter
 
 from scrapers.registry import ScraperRegistry
+from scrapers.base import BaseScraper
+
+
+class FakeFactory:
+    def __init__(self, scraper):
+        self.scraper = scraper
+        self.created_source = None
+        self.created_kwargs = None
+
+    def create(self, source, **kwargs):
+        self.created_source = source
+        self.created_kwargs = kwargs
+        return self.scraper
 
 
 class FakeScraper:
@@ -114,8 +128,6 @@ def test_pipeline_inserts_new_businesses():
 
     session = session_factory()
 
-    from core.models import Business, ScrapeRun
-
     assert session.query(Business).count() == 2
     assert session.query(ScrapeRun).count() == 1
 
@@ -167,8 +179,6 @@ def test_pipeline_detects_duplicate_business():
 
     session = session_factory()
 
-    from core.models import Business
-
     assert session.query(Business).count() == 1
 
     session.close()
@@ -217,8 +227,6 @@ def test_pipeline_updates_existing_business():
     assert result["total_errors"] == 0
 
     session = session_factory()
-
-    from core.models import Business
 
     business = session.query(Business).one()
 
@@ -295,8 +303,6 @@ def test_pipeline_isolates_business_processing_errors():
 
     session = session_factory()
 
-    from core.models import Business
-
     businesses = session.query(Business).all()
 
     assert len(businesses) == 2
@@ -326,8 +332,6 @@ def test_pipeline_reports_progress():
     ]
 
     scraper = FakeScraper(businesses)
-
-    from utils.progress import ProgressReporter
 
     progress_reporter = ProgressReporter()
 
@@ -410,8 +414,6 @@ def test_pipeline_supports_multiple_keywords():
 
     session = session_factory()
 
-    from core.models import Business
-
     assert session.query(Business).count() == 2
 
     session.close()
@@ -452,6 +454,7 @@ def test_pipeline_isolates_keyword_errors():
                         phone="+989111111111",
                     )
                 ]
+
             return []
 
     scraper = KeywordFailingScraper([])
@@ -554,16 +557,24 @@ def test_pipeline_can_create_scraper_from_registry():
         ]
     )
 
-    class FakeRegistry:
-        def create(self, source, **kwargs):
-            assert source == "fake"
-            assert kwargs == {
-                "browser_manager": "fake-browser",
-            }
+    class FakeRegistryScraper(BaseScraper):
+        def __init__(self, **kwargs):
+            super().__init__(
+                browser_manager=kwargs["browser_manager"]
+            )
 
-            return scraper
+        def search(self, query, location):
+            scraper.search(query, location)
 
-    registry = FakeRegistry()
+        def scrape(self):
+            return scraper.scrape()
+
+    registry = ScraperRegistry()
+
+    registry.register(
+        "fake",
+        FakeRegistryScraper,
+    )
 
     pipeline = ScrapePipeline(
         registry=registry,
@@ -580,7 +591,7 @@ def test_pipeline_can_create_scraper_from_registry():
     )
 
     result = pipeline.run(
-        request=request
+        request=request,
     )
 
     assert result["status"] == "COMPLETED"
@@ -600,12 +611,26 @@ def test_pipeline_uses_registry_source():
         ]
     )
 
-    class FakeRegistry:
-        def create(self, source, **kwargs):
-            assert source == "fake"
-            return scraper
+    class FakeRegistryScraper(BaseScraper):
+        def __init__(self, **kwargs):
+            super().__init__(
+                browser_manager=kwargs.get(
+                    "browser_manager"
+                )
+            )
 
-    registry = FakeRegistry()
+        def search(self, query, location):
+            scraper.search(query, location)
+
+        def scrape(self):
+            return scraper.scrape()
+
+    registry = ScraperRegistry()
+
+    registry.register(
+        "fake",
+        FakeRegistryScraper,
+    )
 
     pipeline = ScrapePipeline(
         registry=registry,
@@ -619,16 +644,17 @@ def test_pipeline_uses_registry_source():
     )
 
     result = pipeline.run(
-        request=request
+        request=request,
     )
 
     assert result["status"] == "COMPLETED"
 
     session = session_factory()
 
-    scrape_run = session.query(
-        ScrapeRun
-    ).first()
+    scrape_run = (
+        session.query(ScrapeRun)
+        .first()
+    )
 
     assert scrape_run.source == "fake"
 
@@ -647,6 +673,114 @@ def test_pipeline_rejects_unknown_registry_source():
         ScrapePipeline(
             registry=registry,
             source="unknown",
+            session_factory=session_factory,
+        )
+
+
+def test_pipeline_can_create_scraper_from_factory():
+    session_factory = create_test_session()
+
+    scraper = FakeScraper(
+        [
+            make_business(
+                name="Pizza Sara",
+                phone="+989123456789",
+            )
+        ]
+    )
+
+    factory = FakeFactory(scraper)
+
+    pipeline = ScrapePipeline(
+        factory=factory,
+        source="fake",
+        session_factory=session_factory,
+        scraper_kwargs={
+            "browser_manager": "fake-browser",
+        },
+    )
+
+    assert pipeline.scraper is scraper
+
+    assert factory.created_source == "fake"
+
+    assert factory.created_kwargs == {
+        "browser_manager": "fake-browser",
+    }
+
+
+def test_pipeline_uses_factory_source():
+    session_factory = create_test_session()
+
+    scraper = FakeScraper([])
+
+    factory = FakeFactory(scraper)
+
+    pipeline = ScrapePipeline(
+        factory=factory,
+        source="fake",
+        session_factory=session_factory,
+    )
+
+    assert factory.created_source == "fake"
+
+    assert pipeline.scraper is scraper
+
+
+def test_pipeline_passes_scraper_kwargs_to_factory():
+    session_factory = create_test_session()
+
+    scraper = FakeScraper([])
+
+    factory = FakeFactory(scraper)
+
+    pipeline = ScrapePipeline(
+        factory=factory,
+        source="fake",
+        session_factory=session_factory,
+        scraper_kwargs={
+            "browser_manager": "browser",
+        },
+    )
+
+    assert pipeline.scraper is scraper
+
+    assert factory.created_kwargs == {
+        "browser_manager": "browser",
+    }
+
+
+def test_pipeline_prefers_explicit_scraper_over_factory():
+    session_factory = create_test_session()
+
+    explicit_scraper = FakeScraper([])
+
+    factory_scraper = FakeScraper([])
+
+    factory = FakeFactory(factory_scraper)
+
+    pipeline = ScrapePipeline(
+        scraper=explicit_scraper,
+        factory=factory,
+        source="fake",
+        session_factory=session_factory,
+    )
+
+    assert pipeline.scraper is explicit_scraper
+    assert factory.created_source is None
+
+
+def test_pipeline_requires_scraper_factory_or_registry():
+    session_factory = create_test_session()
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Either scraper, factory, or registry "
+            "must be provided."
+        ),
+    ):
+        ScrapePipeline(
             session_factory=session_factory,
         )
 
