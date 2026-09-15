@@ -1,13 +1,16 @@
 from datetime import datetime, timezone
+import pytest
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from core.models import Base
+from core.models import Base, Business, ScrapeRun
 from core.pipeline import ScrapePipeline
 from core.request import ScrapeRequest
 
 from utils.progress import ProgressReporter
+
+from scrapers.registry import ScraperRegistry
 
 
 class FakeScraper:
@@ -537,4 +540,113 @@ def test_pipeline_reports_keyword_progress():
     assert snapshot.current_keyword == "پیتزا"
     assert snapshot.keyword_index == 2
     assert snapshot.total_keywords == 2
+
+
+def test_pipeline_can_create_scraper_from_registry():
+    session_factory = create_test_session()
+
+    scraper = FakeScraper(
+        [
+            make_business(
+                name="Pizza Sara",
+                phone="+989123456789",
+            )
+        ]
+    )
+
+    class FakeRegistry:
+        def create(self, source, **kwargs):
+            assert source == "fake"
+            assert kwargs == {
+                "browser_manager": "fake-browser",
+            }
+
+            return scraper
+
+    registry = FakeRegistry()
+
+    pipeline = ScrapePipeline(
+        registry=registry,
+        source="fake",
+        session_factory=session_factory,
+        scraper_kwargs={
+            "browser_manager": "fake-browser",
+        },
+    )
+
+    request = ScrapeRequest(
+        location="مشهد",
+        keywords=["پیتزا"],
+    )
+
+    result = pipeline.run(
+        request=request
+    )
+
+    assert result["status"] == "COMPLETED"
+    assert result["total_found"] == 1
+    assert result["total_new"] == 1
+
+
+def test_pipeline_uses_registry_source():
+    session_factory = create_test_session()
+
+    scraper = FakeScraper(
+        [
+            make_business(
+                name="Pizza Sara",
+                phone="+989123456789",
+            )
+        ]
+    )
+
+    class FakeRegistry:
+        def create(self, source, **kwargs):
+            assert source == "fake"
+            return scraper
+
+    registry = FakeRegistry()
+
+    pipeline = ScrapePipeline(
+        registry=registry,
+        source="fake",
+        session_factory=session_factory,
+    )
+
+    request = ScrapeRequest(
+        location="مشهد",
+        keywords=["پیتزا"],
+    )
+
+    result = pipeline.run(
+        request=request
+    )
+
+    assert result["status"] == "COMPLETED"
+
+    session = session_factory()
+
+    scrape_run = session.query(
+        ScrapeRun
+    ).first()
+
+    assert scrape_run.source == "fake"
+
+    session.close()
+
+
+def test_pipeline_rejects_unknown_registry_source():
+    session_factory = create_test_session()
+
+    registry = ScraperRegistry()
+
+    with pytest.raises(
+        KeyError,
+        match="No scraper registered",
+    ):
+        ScrapePipeline(
+            registry=registry,
+            source="unknown",
+            session_factory=session_factory,
+        )
 

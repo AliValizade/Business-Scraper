@@ -28,20 +28,42 @@ class ScrapePipeline:
 
     def __init__(
         self,
-        scraper,
-        session_factory,
+        scraper=None,
+        session_factory=None,
         cleaner=None,
         deduplicator=None,
         progress_reporter=None,
+        registry=None,
+        source="google_maps",
+        scraper_kwargs=None,
     ):
-        self.scraper = scraper
         self.session_factory = session_factory
 
         self.cleaner = cleaner or BusinessCleaner()
-        self.deduplicator = deduplicator or Deduplicator()
+        self.deduplicator = (
+            deduplicator or Deduplicator()
+        )
         self.progress_reporter = (
             progress_reporter or ProgressReporter()
         )
+
+        self.registry = registry
+        self.source = source
+        self.scraper_kwargs = scraper_kwargs or {}
+
+        if scraper is not None:
+            self.scraper = scraper
+
+        elif registry is not None:
+            self.scraper = registry.create(
+                source,
+                **self.scraper_kwargs,
+            )
+
+        else:
+            raise ValueError(
+                "Either scraper or registry must be provided."
+            )
 
     def run(
         self,
@@ -74,7 +96,7 @@ class ScrapePipeline:
         session = self.session_factory()
 
         scrape_run = ScrapeRun(
-            source="google_maps",
+            source=self.source,
             city=location,
             keyword=", ".join(keywords),
             status="RUNNING",
@@ -85,8 +107,9 @@ class ScrapePipeline:
         session.commit()
 
         logger.info(
-            "Scrape run started | source=google_maps | "
+            "Scrape run started | source=%s | "
             "keywords=%s | location=%s | run_id=%s",
+            self.source,
             keywords,
             location,
             scrape_run.id,

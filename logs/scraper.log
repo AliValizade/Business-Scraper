@@ -2181,3 +2181,103 @@ TimeoutError: temporary keyword failure
 2026-09-15 09:15:57 | WARNING | utils.retry | Operation failed | retry=2/3 | error=persistent failure
 2026-09-15 09:15:57 | WARNING | utils.retry | Operation failed | retry=3/3 | error=persistent failure
 2026-09-15 09:15:57 | ERROR | utils.retry | Operation failed after 4 attempts | error=persistent failure
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('فست فود',) | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=فست فود | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=فست فود | found=2 | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=2
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=2 | new=2 | updated=0 | duplicates=0 | errors=0
+2026-09-15 09:35:20 | DEBUG | core.pipeline | Database session closed | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('فست فود',) | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=فست فود | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=فست فود | found=1 | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=1 | new=1 | updated=0 | duplicates=0 | errors=0
+2026-09-15 09:35:20 | DEBUG | core.pipeline | Database session closed | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('فست فود',) | location=مشهد | run_id=2
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=فست فود | location=مشهد | run_id=2
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=فست فود | found=1 | run_id=2
+2026-09-15 09:35:20 | INFO | core.pipeline | All keywords scraped | run_id=2 | total_found=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run completed | run_id=2 | found=1 | new=0 | updated=0 | duplicates=1 | errors=0
+2026-09-15 09:35:20 | DEBUG | core.pipeline | Database session closed | run_id=2
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('فست فود',) | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=فست فود | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=فست فود | found=1 | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=1 | new=1 | updated=0 | duplicates=0 | errors=0
+2026-09-15 09:35:20 | DEBUG | core.pipeline | Database session closed | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('فست فود',) | location=مشهد | run_id=2
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=فست فود | location=مشهد | run_id=2
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=فست فود | found=1 | run_id=2
+2026-09-15 09:35:20 | INFO | core.pipeline | All keywords scraped | run_id=2 | total_found=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run completed | run_id=2 | found=1 | new=0 | updated=1 | duplicates=0 | errors=0
+2026-09-15 09:35:20 | DEBUG | core.pipeline | Database session closed | run_id=2
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('پیتزا',) | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=پیتزا | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=پیتزا | found=1 | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=1 | new=1 | updated=0 | duplicates=0 | errors=0
+2026-09-15 09:35:20 | DEBUG | core.pipeline | Database session closed | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('فست فود',) | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=فست فود | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=فست فود | found=3 | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=3
+2026-09-15 09:35:20 | ERROR | core.pipeline | Error processing business | index=2 | name=None | error=Business data must be a dictionary.
+Traceback (most recent call last):
+  File "D:\IT\12 Freelancing\YouTube\AI-Edu\AI-WorkShop-CodingYar\MyProjects\Business-Scraper\core\pipeline.py", line 200, in run
+    cleaned_business = self.cleaner.clean(
+                       ^^^^^^^^^^^^^^^^^^^
+  File "D:\IT\12 Freelancing\YouTube\AI-Edu\AI-WorkShop-CodingYar\MyProjects\Business-Scraper\core\cleaner.py", line 30, in clean
+    raise TypeError(
+TypeError: Business data must be a dictionary.
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=3 | new=2 | updated=0 | duplicates=0 | errors=1
+2026-09-15 09:35:20 | DEBUG | core.pipeline | Database session closed | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('فست فود',) | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=فست فود | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=فست فود | found=2 | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=2
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=2 | new=2 | updated=0 | duplicates=0 | errors=0
+2026-09-15 09:35:20 | DEBUG | core.pipeline | Database session closed | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('فست فود', 'پیتزا') | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=فست فود | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=فست فود | found=2 | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=پیتزا | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=پیتزا | found=2 | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=4
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=4 | new=2 | updated=0 | duplicates=2 | errors=0
+2026-09-15 09:35:20 | DEBUG | core.pipeline | Database session closed | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('فست فود', 'پیتزا', 'پروتئینی') | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=فست فود | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=فست فود | found=1 | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=پیتزا | location=مشهد | run_id=1
+2026-09-15 09:35:20 | ERROR | core.pipeline | Keyword scraping failed | keyword=پیتزا | location=مشهد | run_id=1 | error=temporary keyword failure
+Traceback (most recent call last):
+  File "D:\IT\12 Freelancing\YouTube\AI-Edu\AI-WorkShop-CodingYar\MyProjects\Business-Scraper\core\pipeline.py", line 145, in run
+    self.scraper.search(
+  File "D:\IT\12 Freelancing\YouTube\AI-Edu\AI-WorkShop-CodingYar\MyProjects\Business-Scraper\tests\test_pipeline.py", line 433, in search
+    raise TimeoutError(
+TimeoutError: temporary keyword failure
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping started | keyword=پروتئینی | location=مشهد | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | Keyword scraping finished | keyword=پروتئینی | found=1 | run_id=1
+2026-09-15 09:35:20 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=2
+2026-09-15 09:35:21 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=2 | new=2 | updated=0 | duplicates=0 | errors=1
+2026-09-15 09:35:21 | DEBUG | core.pipeline | Database session closed | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Scrape run started | source=google_maps | keywords=('فست فود', 'پیتزا') | location=مشهد | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Keyword scraping started | keyword=فست فود | location=مشهد | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Keyword scraping finished | keyword=فست فود | found=2 | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Keyword scraping started | keyword=پیتزا | location=مشهد | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Keyword scraping finished | keyword=پیتزا | found=2 | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=4
+2026-09-15 09:35:21 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=4 | new=2 | updated=0 | duplicates=2 | errors=0
+2026-09-15 09:35:21 | DEBUG | core.pipeline | Database session closed | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Scrape run started | source=fake | keywords=('پیتزا',) | location=مشهد | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Keyword scraping started | keyword=پیتزا | location=مشهد | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Keyword scraping finished | keyword=پیتزا | found=1 | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=1 | new=1 | updated=0 | duplicates=0 | errors=0
+2026-09-15 09:35:21 | DEBUG | core.pipeline | Database session closed | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Scrape run started | source=fake | keywords=('پیتزا',) | location=مشهد | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Keyword scraping started | keyword=پیتزا | location=مشهد | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Keyword scraping finished | keyword=پیتزا | found=1 | run_id=1
+2026-09-15 09:35:21 | INFO | core.pipeline | All keywords scraped | run_id=1 | total_found=1
+2026-09-15 09:35:21 | INFO | core.pipeline | Scrape run completed | run_id=1 | found=1 | new=1 | updated=0 | duplicates=0 | errors=0
+2026-09-15 09:35:21 | DEBUG | core.pipeline | Database session closed | run_id=1
