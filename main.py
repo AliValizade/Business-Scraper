@@ -1,68 +1,51 @@
+import sys
+
+from app.composition import create_application
 from browser.manager import BrowserManager
-from config import (
-    HEADLESS,
-    MAX_RESULTS,
-    MAX_SCROLL_ATTEMPTS,
-    PAGE_TIMEOUT,
-    SCROLL_WAIT_TIME,
-    SEARCH_LOCATION,
-    SEARCH_QUERY,
-)
-from scrapers.google_maps import GoogleMapsScraper
+from cli.commands import run_scrape_command
+from cli.parser import create_parser
+from database.database import SessionLocal
 
 
-def main():
-    browser = BrowserManager(headless=HEADLESS)
-    scraper = GoogleMapsScraper(browser)
+def create_cli_application(source):
+    """Create the application used by the CLI."""
 
-    try:
-        print("Starting browser...")
+    browser_manager = BrowserManager()
 
-        browser.start()
-        browser.page.set_default_timeout(PAGE_TIMEOUT)
+    return create_application(
+        session_factory=SessionLocal,
+        browser_manager=browser_manager,
+        source=source,
+    )
 
-        print("Searching Google Maps...")
-        print(f"Query: {SEARCH_QUERY}")
-        print(f"Location: {SEARCH_LOCATION}")
 
-        scraper.search(
-            query=SEARCH_QUERY,
-            location=SEARCH_LOCATION
+def main(argv=None):
+    """Run the command-line application."""
+
+    parser = create_parser()
+
+    args = parser.parse_args(argv)
+
+    if args.command == "scrape":
+        application = create_cli_application(
+            source=args.source,
         )
 
-        print("\nGoogle Maps search opened successfully.")
-        print(f"Title: {scraper.page.title()}")
-        print(f"URL: {scraper.page.url}")
-
-        scraper.inspect_results()
-
-        businesses = scraper.scroll_results(
-            max_results=MAX_RESULTS,
-            max_scroll_attempts=MAX_SCROLL_ATTEMPTS,
-            wait_time=SCROLL_WAIT_TIME,
+        result = run_scrape_command(
+            args,
+            application,
         )
 
-        print("\n--- Extracted Businesses ---")
+        print(
+            f"Status: {result['status']}"
+        )
 
-        for index, business in enumerate(
-            businesses,
-            start=1
-        ):
-            print(f"\n[{index}]")
+        return result
 
-            for key, value in business.items():
-                print(f"    {key}: {value}")
-
-        input("\nPress Enter to close the browser...")
-
-    except Exception as error:
-        print(f"\nError: {error}")
-
-    finally:
-        print("\nClosing browser...")
-        browser.close()
-        print("Browser closed.")
+    parser.error(
+        f"Unknown command: {args.command}"
+    )
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
