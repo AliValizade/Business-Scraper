@@ -1,6 +1,7 @@
 from core.pipeline import ScrapePipeline
 from scrapers.factory import ScraperFactory
 from scrapers.registry import ScraperRegistry
+from app.application import Application
 from app.composition import (
     Application,
     create_application,
@@ -215,4 +216,21 @@ def test_application_rejects_empty_source():
             "ValueError was not raised."
         )
 
+
+def test_create_application_returns_composed_application():
+    session_factory = create_test_session()
+
+    application = create_application(
+        session_factory=session_factory,
+        browser_manager="fake-browser",
+    )
+
+    assert isinstance(
+        application,
+        Application,
+    )
+
+    assert application.registry is not None
+    assert application.factory is not None
+    assert application.pipeline is not None
 

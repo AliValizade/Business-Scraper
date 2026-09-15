@@ -1,17 +1,8 @@
-from dataclasses import dataclass
-
 from core.pipeline import ScrapePipeline
 from scrapers.default_registry import create_default_registry
 from scrapers.factory import ScraperFactory
 
-
-@dataclass
-class Application:
-    """Application dependencies composed at the application boundary."""
-
-    registry: object
-    factory: ScraperFactory
-    pipeline: ScrapePipeline
+from app.application import Application
 
 
 def create_application(
@@ -20,15 +11,7 @@ def create_application(
     source="google_maps",
     scraper_kwargs=None,
 ):
-    """
-    Create the application composition root.
-
-    The composition root is responsible for wiring:
-        Registry -> Factory -> Pipeline
-
-    External infrastructure dependencies such as the database
-    session factory and browser manager are supplied to this function.
-    """
+    """Create the fully composed application."""
 
     if session_factory is None:
         raise ValueError(
@@ -75,7 +58,8 @@ def create_application(
     )
 
     return Application(
+        pipeline=pipeline,
         registry=registry,
         factory=factory,
-        pipeline=pipeline,
     )
+
