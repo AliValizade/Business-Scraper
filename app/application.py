@@ -19,21 +19,12 @@ class Application:
         self.registry = registry
         self.factory = factory
 
-    def run(
-        self,
-        location,
-        keywords,
-    ):
-        """Create a scrape request and execute the pipeline."""
-
+    def run(self, location, keywords, max_results=None):
         request = ScrapeRequest(
             location=location,
             keywords=keywords,
+            max_results=max_results,
         )
-
-        return self.pipeline.run(
-            request=request,
-        )
-
+        return self.pipeline.run(request=request)
 
         

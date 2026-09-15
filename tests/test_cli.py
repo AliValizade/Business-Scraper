@@ -159,6 +159,7 @@ def test_run_scrape_command_calls_application():
         source="google_maps",
         location="مشهد",
         keywords=["پیتزا", "رستوران"],
+        max_results=None,
     )
 
     result = run_scrape_command(
@@ -193,6 +194,7 @@ def test_run_scrape_command_passes_keywords_unchanged():
             "پیتزا",
             "فست فود",
         ],
+        max_results=None,
     )
 
     run_scrape_command(
@@ -207,6 +209,7 @@ def test_run_scrape_command_passes_keywords_unchanged():
                 "پیتزا",
                 "فست فود",
             ],
+            "max_results": None,
         }
     ]
 

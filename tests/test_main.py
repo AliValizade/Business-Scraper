@@ -106,6 +106,7 @@ def test_main_runs_scrape_command(
     fake_application.run.assert_called_once_with(
         location="مشهد",
         keywords=["پیتزا"],
+        max_results=None,
     )
 
 
@@ -147,6 +148,7 @@ def test_main_supports_multiple_keywords(
             "فست فود",
             "رستوران",
         ],
+        max_results=None,
     )
 
 

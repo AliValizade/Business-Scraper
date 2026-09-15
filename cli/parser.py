@@ -47,4 +47,11 @@ def create_parser():
         ),
     )
 
+    scrape_parser.add_argument(
+        "--max-results",
+        type=int,
+        default=None,
+        help="Maximum number of results to scrape.",
+    )
+
     return parser

@@ -91,3 +91,58 @@ def test_scrape_request_is_immutable():
 
     with pytest.raises(AttributeError):
         request.location = "تهران"
+
+
+def test_scrape_request_accepts_max_results():
+    request = ScrapeRequest(
+        location="Mashhad",
+        keywords=["pizza"],
+        max_results=50,
+    )
+
+    assert request.max_results == 50
+
+
+def test_scrape_request_allows_none_max_results():
+    request = ScrapeRequest(
+        location="Mashhad",
+        keywords=["pizza"],
+    )
+
+    assert request.max_results is None
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        0,
+        -1,
+    ],
+)
+def test_scrape_request_rejects_non_positive_max_results(value):
+    with pytest.raises(ValueError, match="greater than zero"):
+        ScrapeRequest(
+            location="Mashhad",
+            keywords=["pizza"],
+            max_results=value,
+        )
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "50",
+        5.5,
+    ],
+)
+def test_scrape_request_rejects_invalid_max_results_type(value):
+    with pytest.raises(TypeError, match="integer or None"):
+        ScrapeRequest(
+            location="Mashhad",
+            keywords=["pizza"],
+            max_results=value,
+        )
+
+
+
+
