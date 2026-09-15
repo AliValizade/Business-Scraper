@@ -1,9 +1,10 @@
 from types import SimpleNamespace
-
+from unittest.mock import Mock
 import pytest
 
 from cli.commands import run_scrape_command
 from cli.parser import create_parser
+import main
 
 
 def test_parser_creates_scrape_command():
@@ -208,3 +209,94 @@ def test_run_scrape_command_passes_keywords_unchanged():
             ],
         }
     ]
+
+
+def test_format_scrape_result():
+    from cli.commands import format_scrape_result
+
+    result = {
+        "status": "COMPLETED",
+        "total_found": 100,
+        "total_new": 80,
+        "total_updated": 10,
+        "total_duplicates": 10,
+        "total_errors": 2,
+    }
+
+    formatted = format_scrape_result(
+        result
+    )
+
+    assert formatted == (
+        "Status: COMPLETED\n"
+        "Found: 100\n"
+        "New: 80\n"
+        "Updated: 10\n"
+        "Duplicates: 10\n"
+        "Errors: 2"
+    )
+
+
+def test_format_scrape_result_uses_defaults():
+    from cli.commands import format_scrape_result
+
+    formatted = format_scrape_result(
+        {
+            "status": "COMPLETED",
+        }
+    )
+
+    assert formatted == (
+        "Status: COMPLETED\n"
+        "Found: 0\n"
+        "New: 0\n"
+        "Updated: 0\n"
+        "Duplicates: 0\n"
+        "Errors: 0"
+    )
+
+
+def test_main_prints_formatted_scrape_result(
+    monkeypatch,
+    capsys,
+):
+    fake_application = Mock()
+
+    fake_application.run.return_value = {
+        "status": "COMPLETED",
+        "total_found": 10,
+        "total_new": 8,
+        "total_updated": 1,
+        "total_duplicates": 1,
+        "total_errors": 0,
+    }
+
+    monkeypatch.setattr(
+        main,
+        "create_cli_application",
+        lambda source: fake_application,
+    )
+
+    result = main.main(
+        [
+            "scrape",
+            "--source",
+            "google_maps",
+            "--location",
+            "Mashhad",
+            "--keyword",
+            "pizza",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert "Status: COMPLETED" in captured.out
+    assert "Found: 10" in captured.out
+    assert "New: 8" in captured.out
+    assert "Updated: 1" in captured.out
+    assert "Duplicates: 1" in captured.out
+    assert "Errors: 0" in captured.out
+
+    assert result == fake_application.run.return_value
+

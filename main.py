@@ -2,7 +2,10 @@ import sys
 
 from app.composition import create_application
 from browser.manager import BrowserManager
-from cli.commands import run_scrape_command
+from cli.commands import (
+    format_scrape_result,
+    run_scrape_command,
+)
 from cli.parser import create_parser
 from database.database import SessionLocal
 
@@ -37,7 +40,7 @@ def main(argv=None):
         )
 
         print(
-            f"Status: {result['status']}"
+            format_scrape_result(result)
         )
 
         return result
