@@ -4,6 +4,7 @@ from core.cleaner import BusinessCleaner
 from core.deduplicator import Deduplicator
 from core.models import Business, ScrapeRun
 from core.request import ScrapeRequest
+from core.result import ScrapeResult
 from utils.logger import get_logger
 from utils.progress import ProgressReporter
 from scrapers.factory import ScraperFactory
@@ -332,15 +333,18 @@ class ScrapePipeline:
                 scrape_run.total_errors,
             )
 
-            return {
-                "run_id": scrape_run.id,
-                "status": scrape_run.status,
-                "total_found": scrape_run.total_found,
-                "total_new": scrape_run.total_new,
-                "total_updated": scrape_run.total_updated,
-                "total_duplicates": scrape_run.total_duplicates,
-                "total_errors": scrape_run.total_errors,
-            }
+            return ScrapeResult(
+                status=scrape_run.status,
+                source=self.source,
+                location=location,
+                keywords=keywords,
+                total_found=scrape_run.total_found,
+                total_new=scrape_run.total_new,
+                total_updated=scrape_run.total_updated,
+                total_duplicates=scrape_run.total_duplicates,
+                total_errors=scrape_run.total_errors,
+                error_message=None,
+            )
 
         except Exception as error:
             session.rollback()
@@ -476,3 +480,27 @@ class ScrapePipeline:
                 changed = True
 
         return changed
+
+    def _build_result(
+        self,
+        scrape_run,
+        location,
+        keywords,
+        total_found,
+        total_new,
+        total_updated,
+        total_duplicates,
+        total_errors,
+    ):
+        return ScrapeResult(
+            status=scrape_run.status,
+            source=scrape_run.source,
+            location=location,
+            keywords=keywords,
+            total_found=total_found,
+            total_new=total_new,
+            total_updated=total_updated,
+            total_duplicates=total_duplicates,
+            total_errors=total_errors,
+            error_message=scrape_run.error_message,
+        )

@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from core.models import Base, Business, ScrapeRun
 from core.pipeline import ScrapePipeline
 from core.request import ScrapeRequest
+from core.result import ScrapeResult
 
 from utils.progress import ProgressReporter
 
@@ -118,13 +119,13 @@ def test_pipeline_inserts_new_businesses():
         query="فست فود",
         location="مشهد",
     )
-
-    assert result["status"] == "COMPLETED"
-    assert result["total_found"] == 2
-    assert result["total_new"] == 2
-    assert result["total_updated"] == 0
-    assert result["total_duplicates"] == 0
-    assert result["total_errors"] == 0
+    
+    assert result.status == "COMPLETED"
+    assert result.total_found == 2
+    assert result.total_new == 2
+    assert result.total_updated == 0
+    assert result.total_duplicates == 0
+    assert result.total_errors == 0
 
     session = session_factory()
 
@@ -132,6 +133,45 @@ def test_pipeline_inserts_new_businesses():
     assert session.query(ScrapeRun).count() == 1
 
     session.close()
+
+
+def test_pipeline_returns_scrape_result():
+    session_factory = create_test_session()
+
+    scraper = FakeScraper(
+        [
+            make_business(
+                name="Pizza Sara",
+                phone="+989123456789",
+            )
+        ]
+    )
+
+    pipeline = ScrapePipeline(
+        scraper=scraper,
+        session_factory=session_factory,
+        source="google_maps",
+    )
+
+    result = pipeline.run(
+        query="فست فود",
+        location="مشهد",
+    )
+
+    assert isinstance(result, ScrapeResult)
+
+    assert result.status == "COMPLETED"
+    assert result.source == "google_maps"
+    assert result.location == "مشهد"
+    assert result.keywords == ("فست فود",)
+
+    assert result.total_found == 1
+    assert result.total_new == 1
+    assert result.total_updated == 0
+    assert result.total_duplicates == 0
+    assert result.total_errors == 0
+
+    assert result.error_message is None
 
 
 def test_pipeline_detects_duplicate_business():
@@ -153,7 +193,7 @@ def test_pipeline_detects_duplicate_business():
         location="مشهد",
     )
 
-    assert first_result["total_new"] == 1
+    assert first_result.total_new == 1
 
     second_business = make_business()
 
@@ -171,11 +211,11 @@ def test_pipeline_detects_duplicate_business():
         location="مشهد",
     )
 
-    assert second_result["total_found"] == 1
-    assert second_result["total_new"] == 0
-    assert second_result["total_updated"] == 0
-    assert second_result["total_duplicates"] == 1
-    assert second_result["total_errors"] == 0
+    assert second_result.total_found == 1
+    assert second_result.total_new == 0
+    assert second_result.total_updated == 0
+    assert second_result.total_duplicates == 1
+    assert second_result.total_errors == 0
 
     session = session_factory()
 
@@ -220,11 +260,11 @@ def test_pipeline_updates_existing_business():
         location="مشهد",
     )
 
-    assert result["total_found"] == 1
-    assert result["total_new"] == 0
-    assert result["total_updated"] == 1
-    assert result["total_duplicates"] == 0
-    assert result["total_errors"] == 0
+    assert result.total_found == 1
+    assert result.total_new == 0
+    assert result.total_updated == 1
+    assert result.total_duplicates == 0
+    assert result.total_errors == 0
 
     session = session_factory()
 
@@ -294,12 +334,12 @@ def test_pipeline_isolates_business_processing_errors():
         location="مشهد",
     )
 
-    assert result["status"] == "COMPLETED"
-    assert result["total_found"] == 3
-    assert result["total_new"] == 2
-    assert result["total_updated"] == 0
-    assert result["total_duplicates"] == 0
-    assert result["total_errors"] == 1
+    assert result.status == "COMPLETED"
+    assert result.total_found == 3
+    assert result.total_new == 2
+    assert result.total_updated == 0
+    assert result.total_duplicates == 0
+    assert result.total_errors == 1
 
     session = session_factory()
 
@@ -348,7 +388,7 @@ def test_pipeline_reports_progress():
 
     snapshot = progress_reporter.get_snapshot()
 
-    assert result["total_found"] == 2
+    assert result.total_found == 2
 
     assert snapshot.total == 2
     assert snapshot.processed == 2
@@ -395,11 +435,11 @@ def test_pipeline_supports_multiple_keywords():
 
     result = pipeline.run(request=request)
 
-    assert result["status"] == "COMPLETED"
-    assert result["total_found"] == 4
-    assert result["total_new"] == 2
-    assert result["total_duplicates"] == 2
-    assert result["total_errors"] == 0
+    assert result.status == "COMPLETED"
+    assert result.total_found == 4
+    assert result.total_new == 2
+    assert result.total_duplicates == 2
+    assert result.total_errors == 0
 
     assert scraper.search_calls == [
         {
@@ -476,11 +516,11 @@ def test_pipeline_isolates_keyword_errors():
 
     result = pipeline.run(request=request)
 
-    assert result["status"] == "COMPLETED"
-    assert result["total_found"] == 2
-    assert result["total_new"] == 2
-    assert result["total_errors"] == 1
-    assert result["total_duplicates"] == 0
+    assert result.status == "COMPLETED"
+    assert result.total_found == 2
+    assert result.total_new == 2
+    assert result.total_errors == 1
+    assert result.total_duplicates == 0
 
     assert scraper.search_calls == [
         {
@@ -536,7 +576,7 @@ def test_pipeline_reports_keyword_progress():
 
     result = pipeline.run(request=request)
 
-    assert result["status"] == "COMPLETED"
+    assert result.status == "COMPLETED"
 
     snapshot = reporter.get_snapshot()
 
@@ -594,9 +634,9 @@ def test_pipeline_can_create_scraper_from_registry():
         request=request,
     )
 
-    assert result["status"] == "COMPLETED"
-    assert result["total_found"] == 1
-    assert result["total_new"] == 1
+    assert result.status == "COMPLETED"
+    assert result.total_found == 1
+    assert result.total_new == 1
 
 
 def test_pipeline_uses_registry_source():
@@ -647,7 +687,7 @@ def test_pipeline_uses_registry_source():
         request=request,
     )
 
-    assert result["status"] == "COMPLETED"
+    assert result.status == "COMPLETED"
 
     session = session_factory()
 
@@ -857,8 +897,8 @@ def test_pipeline_respects_max_results_across_keywords():
 
     result = pipeline.run(request=request)
 
-    assert result["status"] == "COMPLETED"
-    assert result["total_found"] == 5
+    assert result.status == "COMPLETED"
+    assert result.total_found == 5
 
     assert scraper.search_calls == [
         {
