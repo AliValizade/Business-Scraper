@@ -3,7 +3,9 @@ from unittest.mock import Mock
 import pytest
 
 from app.application import Application
+
 from core.request import ScrapeRequest
+from core.result import ScrapeResult
 
 
 def test_application_requires_pipeline():
@@ -29,9 +31,15 @@ def test_application_stores_pipeline():
 def test_application_run_creates_scrape_request():
     pipeline = Mock()
 
-    pipeline.run.return_value = {
-        "status": "COMPLETED",
-    }
+    pipeline.run.return_value = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="مشهد",
+        keywords=(
+            "پیتزا",
+            "فست فود",
+        ),
+    )
 
     application = Application(
         pipeline=pipeline,
@@ -45,9 +53,8 @@ def test_application_run_creates_scrape_request():
         ],
     )
 
-    assert result == {
-        "status": "COMPLETED",
-    }
+    assert isinstance(result, ScrapeResult)
+    assert result.status == "COMPLETED"
 
     pipeline.run.assert_called_once()
 
@@ -93,11 +100,14 @@ def test_application_run_passes_request_to_pipeline():
 def test_application_run_returns_pipeline_result():
     pipeline = Mock()
 
-    expected_result = {
-        "status": "COMPLETED",
-        "total_found": 10,
-        "total_new": 8,
-    }
+    expected_result = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="مشهد",
+        keywords=("پیتزا",),
+        total_found=10,
+        total_new=8,
+    )
 
     pipeline.run.return_value = expected_result
 
@@ -206,4 +216,31 @@ def test_application_export_requires_export_service():
             output_path="output/test.csv",
             format_name="csv",
         )
+
+
+def test_application_run_passes_max_results_to_request():
+    pipeline = Mock()
+
+    pipeline.run.return_value = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="مشهد",
+        keywords=("رستوران",),
+    )
+
+    application = Application(
+        pipeline=pipeline,
+    )
+
+    application.run(
+        location="مشهد",
+        keywords=["رستوران"],
+        max_results=25,
+    )
+
+    request = pipeline.run.call_args.kwargs[
+        "request"
+    ]
+
+    assert request.max_results == 25
 

@@ -8,12 +8,12 @@ def run_scrape_command(args, application):
 
 def format_scrape_result(result):
     lines = [
-        f"Status: {result.get('status', 'UNKNOWN')}",
-        f"Found: {result.get('total_found', 0)}",
-        f"New: {result.get('total_new', 0)}",
-        f"Updated: {result.get('total_updated', 0)}",
-        f"Duplicates: {result.get('total_duplicates', 0)}",
-        f"Errors: {result.get('total_errors', 0)}",
+        f"Status: {result.status}",
+        f"Found: {result.total_found}",
+        f"New: {result.total_new}",
+        f"Updated: {result.total_updated}",
+        f"Duplicates: {result.total_duplicates}",
+        f"Errors: {result.total_errors}",
     ]
 
     return "\n".join(lines)

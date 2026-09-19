@@ -1,6 +1,8 @@
 from types import SimpleNamespace
 from unittest.mock import Mock
 
+from core.result import ScrapeResult
+
 import main
 
 
@@ -74,10 +76,13 @@ def test_main_runs_scrape_command(
 ):
     fake_application = Mock()
 
-    fake_result = {
-        "status": "COMPLETED",
-        "total_found": 10,
-    }
+    fake_result = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="مشهد",
+        keywords=("پیتزا",),
+        total_found=10,
+    )
 
     fake_application.run.return_value = (
         fake_result
@@ -115,9 +120,16 @@ def test_main_supports_multiple_keywords(
 ):
     fake_application = Mock()
 
-    fake_application.run.return_value = {
-        "status": "COMPLETED",
-    }
+    fake_application.run.return_value = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="مشهد",
+        keywords=(
+            "پیتزا",
+            "فست فود",
+            "رستوران",
+        ),
+    )
 
     monkeypatch.setattr(
         main,
@@ -171,9 +183,12 @@ def test_main_passes_source_to_application_composition(
         fake_create_cli_application,
     )
 
-    fake_application.run.return_value = {
-        "status": "COMPLETED",
-    }
+    fake_application.run.return_value = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="مشهد",
+        keywords=("پیتزا",),
+    )
 
     main.main(
         [

@@ -2,8 +2,11 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 import pytest
 
-from cli.commands import run_scrape_command
+from cli.commands import run_scrape_command, format_scrape_result
 from cli.parser import create_parser
+
+from core.result import ScrapeResult
+
 import main
 
 
@@ -149,16 +152,25 @@ def test_parser_requires_command():
 def test_run_scrape_command_calls_application():
     application = SimpleNamespace()
 
-    application.run = lambda **kwargs: {
-        "status": "COMPLETED",
-        "location": kwargs["location"],
-        "keywords": kwargs["keywords"],
-    }
+    expected_result = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="مشهد",
+        keywords=(
+            "پیتزا",
+            "رستوران",
+        ),
+    )
+
+    application.run = lambda **kwargs: expected_result
 
     args = SimpleNamespace(
         source="google_maps",
         location="مشهد",
-        keywords=["پیتزا", "رستوران"],
+        keywords=[
+            "پیتزا",
+            "رستوران",
+        ],
         max_results=None,
     )
 
@@ -167,14 +179,7 @@ def test_run_scrape_command_calls_application():
         application,
     )
 
-    assert result == {
-        "status": "COMPLETED",
-        "location": "مشهد",
-        "keywords": [
-            "پیتزا",
-            "رستوران",
-        ],
-    }
+    assert result is expected_result
 
 
 def test_run_scrape_command_passes_keywords_unchanged():
@@ -183,9 +188,16 @@ def test_run_scrape_command_passes_keywords_unchanged():
     class FakeApplication:
         def run(self, **kwargs):
             calls.append(kwargs)
-            return {
-                "status": "COMPLETED",
-            }
+
+            return ScrapeResult(
+                status="COMPLETED",
+                source="google_maps",
+                location="مشهد",
+                keywords=(
+                    "پیتزا",
+                    "فست فود",
+                ),
+            )
 
     args = SimpleNamespace(
         source="google_maps",
@@ -215,16 +227,20 @@ def test_run_scrape_command_passes_keywords_unchanged():
 
 
 def test_format_scrape_result():
-    from cli.commands import format_scrape_result
-
-    result = {
-        "status": "COMPLETED",
-        "total_found": 100,
-        "total_new": 80,
-        "total_updated": 10,
-        "total_duplicates": 10,
-        "total_errors": 2,
-    }
+    result = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="مشهد",
+        keywords=(
+            "پیتزا",
+            "رستوران",
+        ),
+        total_found=100,
+        total_new=80,
+        total_updated=10,
+        total_duplicates=10,
+        total_errors=2,
+    )
 
     formatted = format_scrape_result(
         result
@@ -241,12 +257,15 @@ def test_format_scrape_result():
 
 
 def test_format_scrape_result_uses_defaults():
-    from cli.commands import format_scrape_result
+    result = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="مشهد",
+        keywords=("پیتزا",),
+    )
 
     formatted = format_scrape_result(
-        {
-            "status": "COMPLETED",
-        }
+        result
     )
 
     assert formatted == (
@@ -258,21 +277,26 @@ def test_format_scrape_result_uses_defaults():
         "Errors: 0"
     )
 
-
+   
 def test_main_prints_formatted_scrape_result(
     monkeypatch,
     capsys,
 ):
     fake_application = Mock()
 
-    fake_application.run.return_value = {
-        "status": "COMPLETED",
-        "total_found": 10,
-        "total_new": 8,
-        "total_updated": 1,
-        "total_duplicates": 1,
-        "total_errors": 0,
-    }
+    expected_result = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="Mashhad",
+        keywords=("pizza",),
+        total_found=10,
+        total_new=8,
+        total_updated=1,
+        total_duplicates=1,
+        total_errors=0,
+    )
+
+    fake_application.run.return_value = expected_result
 
     monkeypatch.setattr(
         main,
@@ -301,5 +325,5 @@ def test_main_prints_formatted_scrape_result(
     assert "Duplicates: 1" in captured.out
     assert "Errors: 0" in captured.out
 
-    assert result == fake_application.run.return_value
+    assert result is expected_result
 
