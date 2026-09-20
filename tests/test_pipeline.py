@@ -521,7 +521,6 @@ def test_pipeline_isolates_keyword_errors():
     assert result.total_new == 2
     assert result.total_errors == 1
     assert result.total_duplicates == 0
-
     assert scraper.search_calls == [
         {
             "query": "فست فود",
@@ -536,6 +535,7 @@ def test_pipeline_isolates_keyword_errors():
             "location": "مشهد",
         },
     ]
+    assert result.error_message is None
 
 
 def test_pipeline_reports_keyword_progress():
@@ -914,6 +914,106 @@ def test_pipeline_respects_max_results_across_keywords():
     session = session_factory()
 
     assert session.query(Business).count() == 5
+
+    session.close()
+
+
+def test_pipeline_returns_failed_result_on_run_level_error():
+    session_factory = create_test_session()
+
+    scraper = FakeScraper(
+        [
+            make_business(
+                name="Pizza Sara",
+                phone="+989123456789",
+            )
+        ]
+    )
+
+    class FailingProgressReporter:
+        def start(self, total, total_keywords):
+            raise RuntimeError("progress reporter failure")
+
+    pipeline = ScrapePipeline(
+        scraper=scraper,
+        session_factory=session_factory,
+        progress_reporter=FailingProgressReporter(),
+    )
+
+    result = pipeline.run(
+        query="فست فود",
+        location="مشهد",
+    )
+
+    assert isinstance(result, ScrapeResult)
+
+    assert result.status == "FAILED"
+    assert result.source == "google_maps"
+    assert result.location == "مشهد"
+    assert result.keywords == ("فست فود",)
+
+    assert result.error_message == "progress reporter failure"
+    assert result.total_errors == 1
+
+    session = session_factory()
+
+    scrape_run = session.query(ScrapeRun).one()
+
+    assert scrape_run.status == "FAILED"
+    assert scrape_run.error_message == "progress reporter failure"
+    assert scrape_run.finished_at is not None
+    assert scrape_run.total_errors == 1
+
+    session.close()
+
+
+def test_pipeline_returns_failed_result_when_progress_update_fails():
+    session_factory = create_test_session()
+
+    scraper = FakeScraper(
+        [
+            make_business(
+                name="Pizza Sara",
+                phone="+989123456789",
+            )
+        ]
+    )
+
+    class FailingProgressReporter:
+        def start(self, total, total_keywords):
+            pass
+
+        def set_keyword(
+            self,
+            keyword,
+            keyword_index,
+            total_keywords,
+        ):
+            pass
+
+        def update(self, total):
+            raise RuntimeError("progress update failure")
+
+    pipeline = ScrapePipeline(
+        scraper=scraper,
+        session_factory=session_factory,
+        progress_reporter=FailingProgressReporter(),
+    )
+
+    result = pipeline.run(
+        query="فست فود",
+        location="مشهد",
+    )
+
+    assert result.status == "FAILED"
+    assert result.error_message == "progress update failure"
+
+    session = session_factory()
+
+    scrape_run = session.query(ScrapeRun).one()
+
+    assert scrape_run.status == "FAILED"
+    assert scrape_run.error_message == "progress update failure"
 
     session.close()
 

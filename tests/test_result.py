@@ -211,3 +211,20 @@ def test_scrape_result_rejects_invalid_error_message():
             keywords=("pizza",),
             error_message=123,
         )
+
+
+def test_scrape_result_accepts_failed_status_with_error_message():
+    result = ScrapeResult(
+        status="FAILED",
+        source="google_maps",
+        location="Mashhad",
+        keywords=("pizza",),
+        total_errors=1,
+        error_message="Browser failed",
+    )
+
+    assert result.status == "FAILED"
+    assert result.total_errors == 1
+    assert result.error_message == "Browser failed"
+
+

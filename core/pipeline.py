@@ -333,9 +333,8 @@ class ScrapePipeline:
                 scrape_run.total_errors,
             )
 
-            return ScrapeResult(
-                status=scrape_run.status,
-                source=self.source,
+            return self._build_result(
+                scrape_run=scrape_run,
                 location=location,
                 keywords=keywords,
                 total_found=scrape_run.total_found,
@@ -343,7 +342,6 @@ class ScrapePipeline:
                 total_updated=scrape_run.total_updated,
                 total_duplicates=scrape_run.total_duplicates,
                 total_errors=scrape_run.total_errors,
-                error_message=None,
             )
 
         except Exception as error:
@@ -367,7 +365,16 @@ class ScrapePipeline:
                 error,
             )
 
-            raise
+            return self._build_result(
+                scrape_run=scrape_run,
+                location=location,
+                keywords=keywords,
+                total_found=scrape_run.total_found,
+                total_new=scrape_run.total_new,
+                total_updated=scrape_run.total_updated,
+                total_duplicates=scrape_run.total_duplicates,
+                total_errors=scrape_run.total_errors,
+            )
 
         finally:
             session.close()
@@ -429,11 +436,7 @@ class ScrapePipeline:
             for field in fields
         }
 
-    def _find_model_by_dict(
-        self,
-        models,
-        target_dict,
-    ):
+    def _find_model_by_dict(self, models, target_dict):
         for model in models:
             if self._business_to_dict(model) == target_dict:
                 return model
