@@ -496,6 +496,7 @@ class ScrapePipeline:
         total_errors,
     ):
         return ScrapeResult(
+            run_id=scrape_run.id,
             status=scrape_run.status,
             source=scrape_run.source,
             location=location,
@@ -507,3 +508,4 @@ class ScrapePipeline:
             total_errors=total_errors,
             error_message=scrape_run.error_message,
         )
+    

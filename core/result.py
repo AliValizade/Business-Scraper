@@ -10,6 +10,7 @@ class ScrapeResult:
     source: str
     location: str
     keywords: tuple[str, ...]
+    run_id: int
 
     total_found: int = 0
     total_new: int = 0
@@ -46,6 +47,12 @@ class ScrapeResult:
 
         if not self.keywords:
             raise ValueError("keywords cannot be empty.")
+
+        if not isinstance(self.run_id, int):
+            raise TypeError("run_id must be an integer.")
+
+        if self.run_id <= 0:
+            raise ValueError("run_id must be greater than zero.")
 
         normalized_keywords = []
 
@@ -95,3 +102,4 @@ class ScrapeResult:
             tuple(normalized_keywords),
         )
         object.__setattr__(self, "error_message", error_message)
+        object.__setattr__(self, "run_id", self.run_id)

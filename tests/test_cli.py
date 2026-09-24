@@ -160,6 +160,7 @@ def test_run_scrape_command_calls_application():
             "پیتزا",
             "رستوران",
         ),
+        run_id=1,
     )
 
     application.run = lambda **kwargs: expected_result
@@ -197,6 +198,7 @@ def test_run_scrape_command_passes_keywords_unchanged():
                     "پیتزا",
                     "فست فود",
                 ),
+                run_id=1,
             )
 
     args = SimpleNamespace(
@@ -240,6 +242,7 @@ def test_format_scrape_result():
         total_updated=10,
         total_duplicates=10,
         total_errors=2,
+        run_id=1,
     )
 
     formatted = format_scrape_result(
@@ -262,6 +265,7 @@ def test_format_scrape_result_uses_defaults():
         source="google_maps",
         location="مشهد",
         keywords=("پیتزا",),
+        run_id=1,
     )
 
     formatted = format_scrape_result(
@@ -294,6 +298,7 @@ def test_main_prints_formatted_scrape_result(
         total_updated=1,
         total_duplicates=1,
         total_errors=0,
+        run_id=1,
     )
 
     fake_application.run.return_value = expected_result

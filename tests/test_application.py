@@ -39,6 +39,7 @@ def test_application_run_creates_scrape_request():
             "پیتزا",
             "فست فود",
         ),
+        run_id=1,
     )
 
     application = Application(
@@ -107,6 +108,7 @@ def test_application_run_returns_pipeline_result():
         keywords=("پیتزا",),
         total_found=10,
         total_new=8,
+        run_id=1,
     )
 
     pipeline.run.return_value = expected_result
@@ -226,6 +228,7 @@ def test_application_run_passes_max_results_to_request():
         source="google_maps",
         location="مشهد",
         keywords=("رستوران",),
+        run_id=1,
     )
 
     application = Application(

@@ -536,6 +536,7 @@ def test_pipeline_isolates_keyword_errors():
         },
     ]
     assert result.error_message is None
+    assert result.run_id > 0
 
 
 def test_pipeline_reports_keyword_progress():
@@ -963,6 +964,7 @@ def test_pipeline_returns_failed_result_on_run_level_error():
     assert scrape_run.error_message == "progress reporter failure"
     assert scrape_run.finished_at is not None
     assert scrape_run.total_errors == 1
+    assert result.run_id == scrape_run.id
 
     session.close()
 
@@ -1014,9 +1016,87 @@ def test_pipeline_returns_failed_result_when_progress_update_fails():
 
     assert scrape_run.status == "FAILED"
     assert scrape_run.error_message == "progress update failure"
+    assert result.run_id == scrape_run.id
 
     session.close()
 
 
+def test_pipeline_returns_scrape_result_with_run_id():
+    session_factory = create_test_session()
+
+    scraper = FakeScraper(
+        [
+            make_business(
+                name="Pizza Sara",
+                phone="+989123456789",
+            )
+        ]
+    )
+
+    pipeline = ScrapePipeline(
+        scraper=scraper,
+        session_factory=session_factory,
+        source="google_maps",
+    )
+
+    result = pipeline.run(
+        query="فست فود",
+        location="مشهد",
+    )
+
+    session = session_factory()
+
+    scrape_run = session.query(ScrapeRun).one()
+
+    assert result.run_id == scrape_run.id
+    assert result.status == "COMPLETED"
+    
+
+    session.close()
 
 
+def test_pipeline_assigns_distinct_run_ids_to_distinct_runs():
+    session_factory = create_test_session()
+
+    first_pipeline = ScrapePipeline(
+        scraper=FakeScraper([make_business()]),
+        session_factory=session_factory,
+    )
+
+    second_pipeline = ScrapePipeline(
+        scraper=FakeScraper(
+            [
+                make_business(
+                    name="Ace Burger",
+                    phone="+989111111111",
+                )
+            ]
+        ),
+        session_factory=session_factory,
+    )
+
+    first_result = first_pipeline.run(
+        query="فست فود",
+        location="مشهد",
+    )
+
+    second_result = second_pipeline.run(
+        query="پیتزا",
+        location="مشهد",
+    )
+
+    assert first_result.run_id != second_result.run_id
+
+    session = session_factory()
+
+    runs = (
+        session.query(ScrapeRun)
+        .order_by(ScrapeRun.id)
+        .all()
+    )
+
+    assert first_result.run_id == runs[0].id
+    assert second_result.run_id == runs[1].id
+
+    session.close()
+    

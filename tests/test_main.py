@@ -82,6 +82,7 @@ def test_main_runs_scrape_command(
         location="مشهد",
         keywords=("پیتزا",),
         total_found=10,
+        run_id=1,
     )
 
     fake_application.run.return_value = (
@@ -129,6 +130,7 @@ def test_main_supports_multiple_keywords(
             "فست فود",
             "رستوران",
         ),
+        run_id=1,
     )
 
     monkeypatch.setattr(
@@ -188,6 +190,7 @@ def test_main_passes_source_to_application_composition(
         source="google_maps",
         location="مشهد",
         keywords=("پیتزا",),
+        run_id=1,
     )
 
     main.main(
