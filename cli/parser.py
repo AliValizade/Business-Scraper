@@ -64,4 +64,27 @@ def create_parser():
         help="Output file path.",
     )
 
+    runs_parser = subparsers.add_parser(
+        "runs",
+        help="List recent scrape runs.",
+    )
+
+    runs_parser.add_argument(
+        "--limit",
+        type=int,
+        default=20,
+        help="Maximum number of runs to display.",
+    )
+
+    run_parser = subparsers.add_parser(
+        "run",
+        help="Show a scrape run by ID.",
+    )
+
+    run_parser.add_argument(
+        "run_id",
+        type=int,
+        help="Scrape run ID.",
+    )
+
     return parser
