@@ -127,7 +127,29 @@ class ScrapePipeline:
             scrape_run.id,
         )
 
+        browser_manager = getattr(
+            self.scraper,
+            "browser_manager",
+            None,
+        )
+        browser_start = getattr(
+            browser_manager,
+            "start",
+            None,
+        )
+        browser_close = getattr(
+            browser_manager,
+            "close",
+            None,
+        )
+
+        browser_started = False
+
         try:
+            if callable(browser_start):
+                browser_start()
+                browser_started = True
+
             all_businesses = []
 
             self.progress_reporter.start(
@@ -377,6 +399,15 @@ class ScrapePipeline:
             )
 
         finally:
+            if browser_started and callable(browser_close):
+                try:
+                    browser_close()
+                except Exception:
+                    logger.exception(
+                        "Browser close failed | run_id=%s",
+                        scrape_run.id,
+                    )
+
             session.close()
 
             logger.debug(
