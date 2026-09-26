@@ -3,10 +3,12 @@ from datetime import datetime, timezone
 from sqlalchemy import (
     DateTime,
     Float,
+    ForeignKey,
     Index,
     Integer,
     String,
     Text,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -225,5 +227,41 @@ class ScrapeRun(Base):
         Index(
             "ix_scrape_runs_started_at",
             "started_at",
+        ),
+    )
+
+
+class ScrapeRunBusiness(Base):
+    __tablename__ = "scrape_run_businesses"
+
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    run_id: Mapped[int] = mapped_column(
+        ForeignKey("scrape_runs.id"),
+        nullable=False,
+    )
+
+    business_id: Mapped[int] = mapped_column(
+        ForeignKey("businesses.id"),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "run_id",
+            "business_id",
+            name="uq_scrape_run_business",
+        ),
+        Index(
+            "ix_scrape_run_businesses_run_id",
+            "run_id",
+        ),
+        Index(
+            "ix_scrape_run_businesses_business_id",
+            "business_id",
         ),
     )
