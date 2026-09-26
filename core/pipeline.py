@@ -127,6 +127,25 @@ class ScrapePipeline:
             scrape_run.id,
         )
 
+        browser_manager = getattr(
+            self.scraper,
+            "browser_manager",
+            None,
+        )
+        browser_start = getattr(
+            browser_manager,
+            "start",
+            None,
+        )
+        browser_close = getattr(
+            browser_manager,
+            "close",
+            None,
+        )
+
+        if callable(browser_start):
+            browser_start()
+
         try:
             all_businesses = []
 
@@ -377,6 +396,9 @@ class ScrapePipeline:
             )
 
         finally:
+            if callable(browser_close):
+                browser_close()
+
             session.close()
 
             logger.debug(
