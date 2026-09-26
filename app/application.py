@@ -106,6 +106,59 @@ class Application:
         finally:
             session.close()
 
+    def get_run_businesses(self, run_id):
+        if self.session_factory is None:
+            raise ValueError(
+                "session_factory is not configured."
+            )
+
+        if not isinstance(run_id, int) or isinstance(run_id, bool):
+            raise TypeError("run_id must be an integer.")
+
+        if run_id <= 0:
+            raise ValueError("run_id must be greater than zero.")
+
+        from core.models import (
+            Business,
+            ScrapeRun,
+            ScrapeRunBusiness,
+        )
+
+        session = self.session_factory()
+
+        try:
+            scrape_run = (
+                session.query(ScrapeRun)
+                .filter(ScrapeRun.id == run_id)
+                .one_or_none()
+            )
+
+            if scrape_run is None:
+                raise RunNotFoundError(run_id)
+
+            businesses = (
+                session.query(Business)
+                .join(
+                    ScrapeRunBusiness,
+                    ScrapeRunBusiness.business_id == Business.id,
+                )
+                .filter(
+                    ScrapeRunBusiness.run_id == run_id
+                )
+                .order_by(Business.id.asc())
+                .all()
+            )
+
+            return [
+                {
+                    column.name: getattr(business, column.name)
+                    for column in Business.__table__.columns
+                }
+                for business in businesses
+            ]
+        finally:
+            session.close()
+
     def list_runs(self, limit=DEFAULT_RUN_HISTORY_LIMIT):
         if self.session_factory is None:
             raise ValueError(
