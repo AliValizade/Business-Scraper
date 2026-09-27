@@ -15,7 +15,7 @@ from cli.commands import (
     run_scrape_command,
 )
 from cli.parser import create_parser
-from database.database import SessionLocal
+from database.database import SessionLocal, init_db
 
 
 def create_cli_application(source):
@@ -29,6 +29,8 @@ def create_cli_application(source):
 
 
 def main(argv=None):
+    init_db()
+
     parser = create_parser()
 
     args = parser.parse_args(argv)
