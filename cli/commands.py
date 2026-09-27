@@ -47,6 +47,12 @@ def run_get_run_command(args, application):
     )
 
 
+def run_get_run_businesses_command(args, application):
+    return application.get_run_businesses(
+        run_id=args.run_id,
+    )
+
+
 def format_run(run):
     return "\n".join(
         [
@@ -64,6 +70,29 @@ def format_run(run):
             f"Errors: {run['total_errors']}",
             f"Error: {run['error_message']}",
         ]
+    )
+
+
+def format_run_businesses(businesses):
+    if not businesses:
+        return "No businesses found for this run."
+
+    return "\n\n".join(
+        "\n".join(
+            [
+                f"ID: {business['id']}",
+                f"Name: {business['name']}",
+                f"Category: {business['category']}",
+                f"City: {business['city']}",
+                f"Address: {business['address']}",
+                f"Phone: {business['phone']}",
+                f"Rating: {business['rating']}",
+                f"Reviews: {business['reviews_count']}",
+                f"Source: {business['source']}",
+                f"URL: {business['google_maps_url']}",
+            ]
+        )
+        for business in businesses
     )
 
 
