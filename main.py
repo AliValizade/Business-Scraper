@@ -6,8 +6,10 @@ from cli.commands import (
     format_export_result,
     format_scrape_result,
     format_run,
+    format_run_businesses,
     format_runs,
     run_export_command,
+    run_get_run_businesses_command,
     run_get_run_command,
     run_list_runs_command,
     run_scrape_command,
@@ -92,6 +94,17 @@ def main(argv=None):
         )
 
         print(format_run(run))
+
+        if args.businesses:
+            businesses = run_get_run_businesses_command(
+                args,
+                application,
+            )
+
+            print()
+            print(format_run_businesses(businesses))
+
+            return businesses
 
         return run
 
