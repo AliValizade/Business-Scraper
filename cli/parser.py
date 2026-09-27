@@ -87,4 +87,10 @@ def create_parser():
         help="Scrape run ID.",
     )
 
+    run_parser.add_argument(
+        "--businesses",
+        action="store_true",
+        help="Show businesses associated with the scrape run.",
+    )
+
     return parser
