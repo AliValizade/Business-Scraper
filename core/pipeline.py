@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from core.cleaner import BusinessCleaner
 from core.deduplicator import Deduplicator
-from core.models import Business, ScrapeRun
+from core.models import Business, ScrapeRun, ScrapeRunBusiness
 from core.request import ScrapeRequest
 from core.result import ScrapeResult
 from utils.logger import get_logger
@@ -151,6 +151,7 @@ class ScrapePipeline:
                 browser_started = True
 
             all_businesses = []
+            associated_business_ids = set()
 
             self.progress_reporter.start(
                 total=0,
@@ -319,6 +320,17 @@ class ScrapePipeline:
                             scrape_run.total_duplicates += 1
                             self.progress_reporter.increment_duplicates()
 
+                        business = existing_model
+
+                    if business.id not in associated_business_ids:
+                        session.add(
+                            ScrapeRunBusiness(
+                                run_id=scrape_run.id,
+                                business_id=business.id,
+                            )
+                        )
+                        associated_business_ids.add(business.id)
+
                 except Exception as error:
                     scrape_run.total_errors += 1
                     self.progress_reporter.increment_errors()
@@ -414,7 +426,7 @@ class ScrapePipeline:
                 "Database session closed | run_id=%s",
                 scrape_run.id,
             )
-            
+
     def _filter_business_fields(self, business):
         allowed_fields = {
             "name",
@@ -539,4 +551,3 @@ class ScrapePipeline:
             total_errors=total_errors,
             error_message=scrape_run.error_message,
         )
-    
