@@ -116,8 +116,7 @@ def test_run_businesses_preserves_run_not_found_error():
         )
 
 
-def test_cli_startup_initializes_database(tmp_path, monkeypatch):
-    import database.database as database_module
+def test_cli_startup_initializes_database(monkeypatch):
     from main import main
 
     initialized = {"value": False}
@@ -125,9 +124,9 @@ def test_cli_startup_initializes_database(tmp_path, monkeypatch):
     def fake_init_db():
         initialized["value"] = True
 
-    monkeypatch.setattr(database_module, "init_db", fake_init_db)
     monkeypatch.setattr("main.init_db", fake_init_db)
 
-    main(["runs"])
+    with pytest.raises(SystemExit):
+        main(["--help"])
 
     assert initialized["value"] is True
