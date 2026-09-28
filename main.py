@@ -54,12 +54,9 @@ def main(argv=None):
             source="google_maps",
         )
 
-        data = application.get_businesses()
-
         result = run_export_command(
             args,
             application,
-            data,
         )
 
         print(
