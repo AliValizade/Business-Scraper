@@ -60,6 +60,7 @@ class ExcelExporter(BaseExporter):
         self,
         data: Iterable[dict[str, Any]],
         output_path: str | Path,
+        metadata: dict[str, Any] | None = None,
     ) -> Path:
         output_path = Path(output_path)
 
@@ -103,6 +104,12 @@ class ExcelExporter(BaseExporter):
         worksheet.freeze_panes = "A2"
         worksheet.auto_filter.ref = worksheet.dimensions
 
+        if metadata is not None:
+            self._add_summary_sheet(
+                workbook,
+                metadata,
+            )
+
         workbook.save(output_path)
 
         return output_path
@@ -145,3 +152,36 @@ class ExcelExporter(BaseExporter):
             worksheet.column_dimensions[
                 column_letter
             ].width = min(max_length + 2, 60)
+
+    @staticmethod
+    def _add_summary_sheet(workbook, metadata):
+        worksheet = workbook.create_sheet("Scrape Summary")
+
+        summary_fields = [
+            ("Source", "source"),
+            ("City", "city"),
+            ("Keyword", "keyword"),
+            ("Started At", "started_at"),
+            ("Finished At", "finished_at"),
+            ("Status", "status"),
+            ("Total Found", "total_found"),
+            ("New", "total_new"),
+            ("Updated", "total_updated"),
+            ("Duplicates", "total_duplicates"),
+            ("Errors", "total_errors"),
+            ("Error Message", "error_message"),
+            ("Exported Businesses", "exported_businesses"),
+        ]
+
+        worksheet.append(["Metric", "Value"])
+
+        for label, key in summary_fields:
+            worksheet.append([
+                label,
+                metadata.get(key),
+            ])
+
+        worksheet.freeze_panes = "A2"
+        worksheet.column_dimensions["A"].width = 24
+        worksheet.column_dimensions["B"].width = 60
+        worksheet.auto_filter.ref = worksheet.dimensions
