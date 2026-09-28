@@ -11,6 +11,7 @@ class BaseExporter(ABC):
         self,
         data: Iterable[dict[str, Any]],
         output_path: str | Path,
+        metadata: dict[str, Any] | None = None,
     ) -> Path:
         """
         Export business data to the requested output path.

@@ -43,14 +43,23 @@ class Application:
         data,
         output_path,
         format_name,
+        metadata=None,
     ):
         if self.export_service is None:
             raise ValueError("export_service is not configured.")
+
+        if metadata is None:
+            return self.export_service.export(
+                data=data,
+                output_path=output_path,
+                format_name=format_name,
+            )
 
         return self.export_service.export(
             data=data,
             output_path=output_path,
             format_name=format_name,
+            metadata=metadata,
         )
 
     def export_run(
@@ -61,10 +70,34 @@ class Application:
     ):
         businesses = self.get_run_businesses(run_id)
 
+        metadata = None
+
+        if format_name.strip().lower() == "excel":
+            run = self.get_run(run_id)
+            metadata = {
+                key: run.get(key)
+                for key in (
+                    "source",
+                    "city",
+                    "keyword",
+                    "started_at",
+                    "finished_at",
+                    "status",
+                    "total_found",
+                    "total_new",
+                    "total_updated",
+                    "total_duplicates",
+                    "total_errors",
+                    "error_message",
+                )
+            }
+            metadata["exported_businesses"] = len(businesses)
+
         return self.export(
             data=businesses,
             output_path=output_path,
             format_name=format_name,
+            metadata=metadata,
         )
 
     def get_businesses(self):

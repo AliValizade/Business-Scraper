@@ -196,3 +196,52 @@ def test_excel_exporter_freezes_header_and_enables_filter(tmp_path):
     assert worksheet.auto_filter.ref == "A1:C2"
 
     workbook.close()
+
+def test_excel_exporter_writes_scrape_summary(tmp_path):
+    output_path = tmp_path / "run.xlsx"
+
+    data = [
+        {
+            "name": "Pizza Sara",
+            "city": "Mashhad",
+        },
+    ]
+
+    metadata = {
+        "source": "google_maps",
+        "city": "Mashhad",
+        "keyword": "Fast Food",
+        "started_at": "2026-09-28T10:00:00+00:00",
+        "finished_at": "2026-09-28T10:01:00+00:00",
+        "status": "COMPLETED",
+        "total_found": 1,
+        "total_new": 1,
+        "total_updated": 0,
+        "total_duplicates": 0,
+        "total_errors": 0,
+        "error_message": None,
+        "exported_businesses": 1,
+    }
+
+    ExcelExporter().export(
+        data,
+        output_path,
+        metadata=metadata,
+    )
+
+    workbook = load_workbook(output_path)
+    worksheet = workbook["Scrape Summary"]
+
+    assert [cell.value for cell in worksheet[1]] == [
+        "Metric",
+        "Value",
+    ]
+    assert worksheet["A2"].value == "Source"
+    assert worksheet["B2"].value == "google_maps"
+    assert worksheet["A8"].value == "Total Found"
+    assert worksheet["B8"].value == 1
+    assert worksheet["A14"].value == "Exported Businesses"
+    assert worksheet["B14"].value == 1
+    assert worksheet.freeze_panes == "A2"
+
+    workbook.close()

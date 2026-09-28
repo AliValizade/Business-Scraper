@@ -41,6 +41,7 @@ class ExportService:
         data: Iterable[dict[str, Any]],
         output_path: str | Path,
         format_name: str,
+        metadata: dict[str, Any] | None = None,
     ) -> Path:
         if not isinstance(format_name, str):
             raise TypeError("format_name must be a string.")
@@ -61,7 +62,14 @@ class ExportService:
                 f"Available formats: {available_formats}"
             )
 
+        if metadata is None:
+            return exporter.export(
+                data=data,
+                output_path=output_path,
+            )
+
         return exporter.export(
             data=data,
             output_path=output_path,
+            metadata=metadata,
         )
