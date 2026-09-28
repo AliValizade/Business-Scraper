@@ -48,6 +48,13 @@ class Application:
         if self.export_service is None:
             raise ValueError("export_service is not configured.")
 
+        if metadata is None:
+            return self.export_service.export(
+                data=data,
+                output_path=output_path,
+                format_name=format_name,
+            )
+
         return self.export_service.export(
             data=data,
             output_path=output_path,
