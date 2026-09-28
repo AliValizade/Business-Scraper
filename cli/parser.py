@@ -58,6 +58,14 @@ def create_parser():
     )
 
     export_parser.add_argument(
+        "--run-id",
+        type=int,
+        default=None,
+        dest="run_id",
+        help="Export businesses associated with a specific scrape run.",
+    )
+
+    export_parser.add_argument(
         "--output",
         required=True,
         dest="output_path",
