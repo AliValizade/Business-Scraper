@@ -350,9 +350,6 @@ def test_application_export_run_does_not_add_metadata_for_csv():
         export_service=export_service,
     )
 
-    application.get_run = Mock(
-        return_value={"source": "google_maps"}
-    )
     application.get_run_businesses = Mock(
         return_value=[{"id": 1, "name": "Pizza Sara"}]
     )
@@ -367,5 +364,4 @@ def test_application_export_run_does_not_add_metadata_for_csv():
         data=[{"id": 1, "name": "Pizza Sara"}],
         output_path="output/run.csv",
         format_name="csv",
-        metadata=None,
     )
