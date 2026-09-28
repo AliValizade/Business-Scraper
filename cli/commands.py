@@ -19,7 +19,17 @@ def format_scrape_result(result):
     return "\n".join(lines)
 
 
-def run_export_command(args, application, data):
+def run_export_command(args, application, data=None):
+    if args.run_id is not None:
+        return application.export_run(
+            run_id=args.run_id,
+            output_path=args.output_path,
+            format_name=args.format_name,
+        )
+
+    if data is None:
+        data = application.get_businesses()
+
     return application.export(
         data=data,
         output_path=args.output_path,
