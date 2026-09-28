@@ -53,6 +53,20 @@ class Application:
             format_name=format_name,
         )
 
+    def export_run(
+        self,
+        run_id,
+        output_path,
+        format_name,
+    ):
+        businesses = self.get_run_businesses(run_id)
+
+        return self.export(
+            data=businesses,
+            output_path=output_path,
+            format_name=format_name,
+        )
+
     def get_businesses(self):
         if self.session_factory is None:
             raise ValueError(
