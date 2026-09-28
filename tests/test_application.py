@@ -247,3 +247,125 @@ def test_application_run_passes_max_results_to_request():
 
     assert request.max_results == 25
 
+
+
+def test_application_export_passes_metadata_to_export_service():
+    export_service = Mock()
+
+    application = Application(
+        pipeline=Mock(),
+        export_service=export_service,
+    )
+
+    data = [{"name": "Pizza Sara"}]
+
+    application.export(
+        data=data,
+        output_path="output.xlsx",
+        format_name="excel",
+        metadata={"source": "google_maps"},
+    )
+
+    export_service.export.assert_called_once_with(
+        data=data,
+        output_path="output.xlsx",
+        format_name="excel",
+        metadata={"source": "google_maps"},
+    )
+
+
+def test_application_export_run_builds_excel_summary_metadata():
+    export_service = Mock()
+    export_service.export.return_value = "output/run.xlsx"
+
+    application = Application(
+        pipeline=Mock(),
+        export_service=export_service,
+    )
+
+    application.get_run = Mock(
+        return_value={
+            "source": "google_maps",
+            "city": "Mashhad",
+            "keyword": "Fast Food",
+            "started_at": "started",
+            "finished_at": "finished",
+            "status": "COMPLETED",
+            "total_found": 2,
+            "total_new": 2,
+            "total_updated": 0,
+            "total_duplicates": 0,
+            "total_errors": 0,
+            "error_message": None,
+        }
+    )
+    application.get_run_businesses = Mock(
+        return_value=[
+            {"id": 1, "name": "Pizza Sara"},
+            {"id": 2, "name": "Fast Food Center"},
+        ]
+    )
+
+    result = application.export_run(
+        run_id=7,
+        output_path="output/run.xlsx",
+        format_name="excel",
+    )
+
+    assert result == "output/run.xlsx"
+    application.get_run.assert_called_once_with(7)
+    application.get_run_businesses.assert_called_once_with(7)
+
+    export_service.export.assert_called_once_with(
+        data=[
+            {"id": 1, "name": "Pizza Sara"},
+            {"id": 2, "name": "Fast Food Center"},
+        ],
+        output_path="output/run.xlsx",
+        format_name="excel",
+        metadata={
+            "source": "google_maps",
+            "city": "Mashhad",
+            "keyword": "Fast Food",
+            "started_at": "started",
+            "finished_at": "finished",
+            "status": "COMPLETED",
+            "total_found": 2,
+            "total_new": 2,
+            "total_updated": 0,
+            "total_duplicates": 0,
+            "total_errors": 0,
+            "error_message": None,
+            "exported_businesses": 2,
+        },
+    )
+
+
+def test_application_export_run_does_not_add_metadata_for_csv():
+    export_service = Mock()
+    export_service.export.return_value = "output/run.csv"
+
+    application = Application(
+        pipeline=Mock(),
+        export_service=export_service,
+    )
+
+    application.get_run = Mock(
+        return_value={"source": "google_maps"}
+    )
+    application.get_run_businesses = Mock(
+        return_value=[{"id": 1, "name": "Pizza Sara"}]
+    )
+
+    application.export_run(
+        run_id=7,
+        output_path="output/run.csv",
+        format_name="csv",
+    )
+
+    export_service.export.assert_called_once_with(
+        data=[{"id": 1, "name": "Pizza Sara"}],
+        output_path="output/run.csv",
+        format_name="csv",
+        metadata=None,
+    )
