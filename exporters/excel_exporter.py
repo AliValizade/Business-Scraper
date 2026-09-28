@@ -76,6 +76,12 @@ class ExcelExporter(BaseExporter):
         worksheet.title = "Businesses"
 
         if not rows:
+            if metadata is not None:
+                self._add_summary_sheet(
+                    workbook,
+                    metadata,
+                )
+
             workbook.save(output_path)
             return output_path
 
