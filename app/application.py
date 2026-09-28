@@ -68,12 +68,12 @@ class Application:
         output_path,
         format_name,
     ):
-        run = self.get_run(run_id)
         businesses = self.get_run_businesses(run_id)
 
         metadata = None
 
         if format_name.strip().lower() == "excel":
+            run = self.get_run(run_id)
             metadata = {
                 key: run.get(key)
                 for key in (
