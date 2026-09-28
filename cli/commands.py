@@ -20,7 +20,7 @@ def format_scrape_result(result):
 
 
 def run_export_command(args, application, data=None):
-    if args.run_id is not None:
+    if getattr(args, "run_id", None) is not None:
         return application.export_run(
             run_id=args.run_id,
             output_path=args.output_path,
