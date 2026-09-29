@@ -1,6 +1,18 @@
 import argparse
 
 
+def positive_int(value):
+    try:
+        number = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("must be an integer") from exc
+
+    if number <= 0:
+        raise argparse.ArgumentTypeError("must be greater than zero")
+
+    return number
+
+
 def create_parser():
     parser = argparse.ArgumentParser(
         prog="business-scraper",
@@ -39,7 +51,7 @@ def create_parser():
 
     scrape_parser.add_argument(
         "--max-results",
-        type=int,
+        type=positive_int,
         default=None,
         help="Maximum number of results for the entire request.",
     )
@@ -59,7 +71,7 @@ def create_parser():
 
     export_parser.add_argument(
         "--run-id",
-        type=int,
+        type=positive_int,
         default=None,
         dest="run_id",
         help="Export businesses associated with a specific scrape run.",
@@ -79,7 +91,7 @@ def create_parser():
 
     runs_parser.add_argument(
         "--limit",
-        type=int,
+        type=positive_int,
         default=20,
         help="Maximum number of runs to display.",
     )
@@ -91,7 +103,7 @@ def create_parser():
 
     run_parser.add_argument(
         "run_id",
-        type=int,
+        type=positive_int,
         help="Scrape run ID.",
     )
 

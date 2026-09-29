@@ -332,3 +332,46 @@ def test_main_prints_formatted_scrape_result(
 
     assert result is expected_result
 
+
+
+def test_parser_rejects_non_positive_numeric_arguments():
+    parser = create_parser()
+
+    invalid_cases = [
+        [
+            "scrape", "--location", "مشهد", "--keyword", "پیتزا",
+            "--max-results", "0",
+        ],
+        ["runs", "--limit", "0"],
+        ["run", "0"],
+        [
+            "export", "--format", "csv", "--run-id", "0",
+            "--output", "out.csv",
+        ],
+    ]
+
+    for arguments in invalid_cases:
+        with pytest.raises(SystemExit):
+            parser.parse_args(arguments)
+
+
+def test_parser_accepts_positive_numeric_arguments():
+    parser = create_parser()
+
+    args = parser.parse_args([
+        "scrape", "--location", "مشهد", "--keyword", "پیتزا",
+        "--max-results", "5",
+    ])
+    assert args.max_results == 5
+
+    args = parser.parse_args(["runs", "--limit", "10"])
+    assert args.limit == 10
+
+    args = parser.parse_args(["run", "3"])
+    assert args.run_id == 3
+
+    args = parser.parse_args([
+        "export", "--format", "csv", "--run-id", "3",
+        "--output", "out.csv",
+    ])
+    assert args.run_id == 3
