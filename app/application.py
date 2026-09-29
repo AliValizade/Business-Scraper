@@ -1,3 +1,4 @@
+from core.result import ScrapeResult
 from services.business_service import BusinessService
 from services.export_service import ExportService as ApplicationExportService
 from services.run_service import RunService
@@ -45,15 +46,37 @@ class Application:
             )
 
     def run(self, location, keywords, max_results=None):
-        return self.scrape_service.start_scrape(
+        result = self.scrape_service.start_scrape(
             location=location,
             keywords=keywords,
             max_results=max_results,
+        )
+        return ScrapeResult(
+            status=result.status,
+            source=result.source,
+            location=result.location,
+            keywords=result.keywords,
+            run_id=result.run_id,
+            total_found=result.total_found,
+            total_new=result.total_new,
+            total_updated=result.total_updated,
+            total_duplicates=result.total_duplicates,
+            total_errors=result.total_errors,
+            error_message=result.error_message,
         )
 
     def export(self, data, output_path, format_name, metadata=None):
         if self.export_service is None:
             raise ValueError("export_service is not configured.")
+
+        if self.application_export_service is not None:
+            result = self.application_export_service.export(
+                data=data,
+                output_path=output_path,
+                format_name=format_name,
+                metadata=metadata,
+            )
+            return result.output_path
 
         if metadata is None:
             return self.export_service.export(
@@ -104,19 +127,29 @@ class Application:
     def get_businesses(self):
         if self.business_service is None:
             raise ValueError("session_factory is not configured.")
-        return self.business_service.list_businesses()
+        return [
+            {field: getattr(business, field) for field in business.__dataclass_fields__}
+            for business in self.business_service.list_businesses()
+        ]
 
     def get_run(self, run_id):
         if self.run_service is None:
             raise ValueError("session_factory is not configured.")
-        return self.run_service.get_run(run_id)
+        run = self.run_service.get_run(run_id)
+        return {field: getattr(run, field) for field in run.__dataclass_fields__}
 
     def get_run_businesses(self, run_id):
         if self.run_service is None:
             raise ValueError("session_factory is not configured.")
-        return self.run_service.get_run_businesses(run_id)
+        return [
+            {field: getattr(business, field) for field in business.__dataclass_fields__}
+            for business in self.run_service.get_run_businesses(run_id)
+        ]
 
     def list_runs(self, limit=DEFAULT_RUN_HISTORY_LIMIT):
         if self.run_service is None:
             raise ValueError("session_factory is not configured.")
-        return self.run_service.list_runs(limit=limit)
+        return [
+            {field: getattr(run, field) for field in run.__dataclass_fields__}
+            for run in self.run_service.list_runs(limit=limit)
+        ]
