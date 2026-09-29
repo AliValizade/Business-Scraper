@@ -47,3 +47,27 @@ def test_search_passes_timeout_exceptions_to_retry():
         assert kwargs["delay"] == 2
         assert PlaywrightTimeoutError in kwargs["exceptions"]
         assert TimeoutError in kwargs["exceptions"]
+
+
+def test_extract_source_id_from_google_maps_url():
+    browser_manager = FakeBrowserManager()
+    scraper = GoogleMapsScraper(browser_manager)
+
+    url = (
+        "https://www.google.com/maps/place/Test/"
+        "data=!4m5!3m4!1s0x1234567890abcdef:0x1234567890abcdef!"
+        "2e0!7i16384!8i8192"
+    )
+
+    assert scraper._extract_source_id(url) == (
+        "0x1234567890abcdef:0x1234567890abcdef"
+    )
+
+
+def test_extract_source_id_returns_none_when_identifier_is_missing():
+    browser_manager = FakeBrowserManager()
+    scraper = GoogleMapsScraper(browser_manager)
+
+    assert scraper._extract_source_id(
+        "https://www.google.com/maps/place/Test"
+    ) is None
