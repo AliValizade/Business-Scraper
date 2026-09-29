@@ -17,6 +17,10 @@ class Application:
         factory=None,
         export_service=None,
         session_factory=None,
+        scrape_service=None,
+        run_service=None,
+        business_service=None,
+        application_export_service=None,
     ):
         if pipeline is None:
             raise ValueError("pipeline is required.")
@@ -27,25 +31,37 @@ class Application:
         self.export_service = export_service
         self.session_factory = session_factory
 
-        self.scrape_service = ScrapeService(pipeline=pipeline)
+        self.scrape_service = scrape_service or ScrapeService(pipeline=pipeline)
 
         self.run_service = (
-            RunService(session_factory=session_factory)
-            if session_factory is not None
-            else None
+            run_service
+            if run_service is not None
+            else (
+                RunService(session_factory=session_factory)
+                if session_factory is not None
+                else None
+            )
         )
         self.business_service = (
-            BusinessService(session_factory=session_factory)
-            if session_factory is not None
-            else None
+            business_service
+            if business_service is not None
+            else (
+                BusinessService(session_factory=session_factory)
+                if session_factory is not None
+                else None
+            )
         )
         self.application_export_service = (
-            ApplicationExportService(
-                export_service=export_service,
-                run_service=self.run_service,
+            application_export_service
+            if application_export_service is not None
+            else (
+                ApplicationExportService(
+                    export_service=export_service,
+                    run_service=self.run_service,
+                )
+                if export_service is not None and self.run_service is not None
+                else None
             )
-            if export_service is not None and self.run_service is not None
-            else None
         )
 
     def run(self, location, keywords, max_results=None):
