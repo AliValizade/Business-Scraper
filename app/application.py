@@ -51,6 +51,10 @@ class Application:
             keywords=keywords,
             max_results=max_results,
         )
+
+        if isinstance(result, ScrapeResult):
+            return result
+
         return ScrapeResult(
             status=result.status,
             source=result.source,
