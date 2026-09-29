@@ -46,12 +46,36 @@ class Application:
             )
 
     def run(self, location, keywords, max_results=None):
-        return self.pipeline.run(
-            request=self.scrape_service.build_request(
+        if hasattr(self.scrape_service, "build_request"):
+            result = self.scrape_service.start_scrape(
                 location=location,
                 keywords=keywords,
                 max_results=max_results,
             )
+        else:
+            result = self.pipeline.run(
+                request=self.scrape_service.build_request(
+                    location=location,
+                    keywords=keywords,
+                    max_results=max_results,
+                )
+            )
+
+        if isinstance(result, ScrapeResult):
+            return result
+
+        return ScrapeResult(
+            status=result.status,
+            source=result.source,
+            location=result.location,
+            keywords=result.keywords,
+            run_id=result.run_id,
+            total_found=result.total_found,
+            total_new=result.total_new,
+            total_updated=result.total_updated,
+            total_duplicates=result.total_duplicates,
+            total_errors=result.total_errors,
+            error_message=result.error_message,
         )
 
     def export(self, data, output_path, format_name, metadata=None):
