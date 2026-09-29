@@ -29,21 +29,24 @@ class Application:
 
         self.scrape_service = ScrapeService(pipeline=pipeline)
 
-        self.run_service = None
-        self.business_service = None
-        self.application_export_service = None
-
-        if session_factory is not None:
-            self.run_service = RunService(session_factory=session_factory)
-            self.business_service = BusinessService(
-                session_factory=session_factory,
-            )
-
-        if export_service is not None and self.run_service is not None:
-            self.application_export_service = ApplicationExportService(
+        self.run_service = (
+            RunService(session_factory=session_factory)
+            if session_factory is not None
+            else None
+        )
+        self.business_service = (
+            BusinessService(session_factory=session_factory)
+            if session_factory is not None
+            else None
+        )
+        self.application_export_service = (
+            ApplicationExportService(
                 export_service=export_service,
                 run_service=self.run_service,
             )
+            if export_service is not None and self.run_service is not None
+            else None
+        )
 
     def run(self, location, keywords, max_results=None):
         result = self.scrape_service.start_scrape(
