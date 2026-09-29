@@ -57,8 +57,16 @@ class ExportService:
             }
             metadata["exported_businesses"] = len(businesses)
 
+        data = [
+            {
+                field: getattr(business, field)
+                for field in business.__dataclass_fields__
+            }
+            for business in businesses
+        ]
+
         return self.export(
-            data=[business.__dict__ if hasattr(business, "__dict__") else business for business in businesses],
+            data=data,
             output_path=output_path,
             format_name=format_name,
             metadata=metadata,
