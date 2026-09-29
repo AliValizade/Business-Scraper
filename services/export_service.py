@@ -1,3 +1,6 @@
+from .dto import ExportResultDTO
+
+
 class ExportService:
     """Application service boundary for export operations."""
 
@@ -11,16 +14,22 @@ class ExportService:
 
     def export(self, data, output_path, format_name, metadata=None):
         if metadata is None:
-            return self.exporter.export(
+            result = self.exporter.export(
                 data=data,
                 output_path=output_path,
                 format_name=format_name,
             )
-        return self.exporter.export(
-            data=data,
-            output_path=output_path,
+        else:
+            result = self.exporter.export(
+                data=data,
+                output_path=output_path,
+                format_name=format_name,
+                metadata=metadata,
+            )
+        return ExportResultDTO(
+            output_path=result,
             format_name=format_name,
-            metadata=metadata,
+            exported_count=len(data),
         )
 
     def export_run(self, run_id, output_path, format_name):
@@ -30,7 +39,7 @@ class ExportService:
         if format_name.strip().lower() == "excel":
             run = self.run_service.get_run(run_id)
             metadata = {
-                key: run.get(key)
+                key: getattr(run, key)
                 for key in (
                     "source",
                     "city",
@@ -49,7 +58,7 @@ class ExportService:
             metadata["exported_businesses"] = len(businesses)
 
         return self.export(
-            data=businesses,
+            data=[business.__dict__ if hasattr(business, "__dict__") else business for business in businesses],
             output_path=output_path,
             format_name=format_name,
             metadata=metadata,
