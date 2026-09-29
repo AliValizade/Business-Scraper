@@ -11,10 +11,18 @@ class ScrapeService:
             raise ValueError("pipeline is required.")
         self.pipeline = pipeline
 
-    def start_scrape(self, request, keywords=None, max_results=None):
+    def start_scrape(
+        self,
+        request=None,
+        keywords=None,
+        max_results=None,
+        location=None,
+    ):
         if isinstance(request, ScrapeRequestDTO):
             request_dto = request
         else:
+            if request is None:
+                request = location
             request_dto = ScrapeRequestDTO.from_values(
                 location=request,
                 keywords=keywords,
@@ -27,6 +35,7 @@ class ScrapeService:
             max_results=request_dto.max_results,
         )
         result = self.pipeline.run(request=core_request)
+
         return ScrapeResultDTO(
             status=result.status,
             source=result.source,
