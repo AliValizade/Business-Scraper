@@ -148,6 +148,20 @@ class GoogleMapsScraper(BaseScraper):
 
         return href
 
+    def _extract_source_id(self, google_maps_url):
+        if not google_maps_url:
+            return None
+
+        source_id_match = re.search(
+            r'!1s([^!]+)',
+            google_maps_url,
+        )
+
+        if not source_id_match:
+            return None
+
+        return source_id_match.group(1)
+
     def _extract_coordinates(self, google_maps_url):
         if not google_maps_url:
             return None, None
@@ -394,7 +408,9 @@ class GoogleMapsScraper(BaseScraper):
         # Source ID
         # ----------------------------------------
 
-        source_id = None
+        source_id = self._extract_source_id(
+            google_maps_url
+        )
 
         # ----------------------------------------
         # Structured Business Data
