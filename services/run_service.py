@@ -1,5 +1,7 @@
 from core.errors import RunNotFoundError
 
+from .dto import BusinessDTO, RunDTO
+
 
 class RunService:
     """Application service boundary for scrape-run operations."""
@@ -24,7 +26,7 @@ class RunService:
             )
             if scrape_run is None:
                 raise RunNotFoundError(run_id)
-            return self._run_to_dict(scrape_run)
+            return self._run_to_dto(scrape_run)
         finally:
             session.close()
 
@@ -47,7 +49,7 @@ class RunService:
                 .limit(limit)
                 .all()
             )
-            return [self._run_to_dict(run) for run in runs]
+            return [self._run_to_dto(run) for run in runs]
         finally:
             session.close()
 
@@ -75,7 +77,7 @@ class RunService:
                 .order_by(Business.id.asc())
                 .all()
             )
-            return [self._business_to_dict(business) for business in businesses]
+            return [self._business_to_dto(business) for business in businesses]
         finally:
             session.close()
 
@@ -87,15 +89,44 @@ class RunService:
             raise ValueError("run_id must be greater than zero.")
 
     @staticmethod
-    def _run_to_dict(scrape_run):
-        return {
-            column.name: getattr(scrape_run, column.name)
-            for column in scrape_run.__table__.columns
-        }
+    def _run_to_dto(scrape_run):
+        return RunDTO(
+            id=scrape_run.id,
+            source=scrape_run.source,
+            city=scrape_run.city,
+            keyword=scrape_run.keyword,
+            started_at=scrape_run.started_at,
+            finished_at=scrape_run.finished_at,
+            status=scrape_run.status,
+            total_found=scrape_run.total_found,
+            total_new=scrape_run.total_new,
+            total_updated=scrape_run.total_updated,
+            total_duplicates=scrape_run.total_duplicates,
+            total_errors=scrape_run.total_errors,
+            error_message=scrape_run.error_message,
+        )
 
     @staticmethod
-    def _business_to_dict(business):
-        return {
-            column.name: getattr(business, column.name)
-            for column in business.__table__.columns
-        }
+    def _business_to_dto(business):
+        return BusinessDTO(
+            id=business.id,
+            name=business.name,
+            category=business.category,
+            address=business.address,
+            city=business.city,
+            phone=business.phone,
+            website=business.website,
+            instagram=business.instagram,
+            rating=business.rating,
+            reviews_count=business.reviews_count,
+            latitude=business.latitude,
+            longitude=business.longitude,
+            google_maps_url=business.google_maps_url,
+            source=business.source,
+            source_id=business.source_id,
+            search_keyword=business.search_keyword,
+            scraped_at=business.scraped_at,
+            source_url=business.source_url,
+            created_at=business.created_at,
+            updated_at=business.updated_at,
+        )
