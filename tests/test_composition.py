@@ -234,3 +234,21 @@ def test_create_application_returns_composed_application():
     assert application.factory is not None
     assert application.pipeline is not None
 
+
+
+def test_composition_root_injects_service_dependencies():
+    session_factory = create_test_session()
+
+    application = create_application(
+        session_factory=session_factory,
+        browser_manager="fake-browser",
+    )
+
+    assert application.scrape_service is not None
+    assert application.run_service is not None
+    assert application.business_service is not None
+    assert application.application_export_service is not None
+    assert application.scrape_service.pipeline is application.pipeline
+    assert application.run_service.session_factory is session_factory
+    assert application.business_service.session_factory is session_factory
+    assert application.application_export_service.run_service is application.run_service
