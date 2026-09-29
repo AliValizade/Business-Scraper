@@ -35,11 +35,11 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
 
-    if args.command == "scrape":
-        application = create_cli_application(
-            source=args.source,
-        )
+    application = create_cli_application(
+        source=getattr(args, "source", "google_maps"),
+    )
 
+    if args.command == "scrape":
         result = run_scrape_command(
             args,
             application,
@@ -50,10 +50,6 @@ def main(argv=None):
         return result
 
     if args.command == "export":
-        application = create_cli_application(
-            source="google_maps",
-        )
-
         result = run_export_command(
             args,
             application,
@@ -69,10 +65,6 @@ def main(argv=None):
         return result
 
     if args.command == "runs":
-        application = create_cli_application(
-            source="google_maps",
-        )
-
         runs = run_list_runs_command(
             args,
             application,
@@ -83,10 +75,6 @@ def main(argv=None):
         return runs
 
     if args.command == "run":
-        application = create_cli_application(
-            source="google_maps",
-        )
-
         run = run_get_run_command(
             args,
             application,
