@@ -79,6 +79,14 @@ def test_application_run_creates_scrape_request():
 def test_application_run_passes_request_to_pipeline():
     pipeline = Mock()
 
+    pipeline.run.return_value = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="تهران",
+        keywords=("رستوران",),
+        run_id=1,
+    )
+
     application = Application(
         pipeline=pipeline,
     )
@@ -88,14 +96,10 @@ def test_application_run_passes_request_to_pipeline():
         keywords=["رستوران"],
     )
 
-    request = pipeline.run.call_args.kwargs[
-        "request"
-    ]
+    request = pipeline.run.call_args.kwargs["request"]
 
     assert request.location == "تهران"
-    assert request.keywords == (
-        "رستوران",
-    )
+    assert request.keywords == ("رستوران",)
 
 
 def test_application_run_returns_pipeline_result():
@@ -122,7 +126,14 @@ def test_application_run_returns_pipeline_result():
         keywords=["پیتزا"],
     )
 
-    assert result is expected_result
+    assert isinstance(result, ScrapeResult)
+    assert result.status == expected_result.status
+    assert result.source == expected_result.source
+    assert result.location == expected_result.location
+    assert result.keywords == expected_result.keywords
+    assert result.run_id == expected_result.run_id
+    assert result.total_found == expected_result.total_found
+    assert result.total_new == expected_result.total_new
 
 
 def test_application_preserves_registry_and_factory():

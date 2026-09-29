@@ -46,20 +46,11 @@ class Application:
             )
 
     def run(self, location, keywords, max_results=None):
-        if hasattr(self.scrape_service, "build_request"):
-            result = self.scrape_service.start_scrape(
-                location=location,
-                keywords=keywords,
-                max_results=max_results,
-            )
-        else:
-            result = self.pipeline.run(
-                request=self.scrape_service.build_request(
-                    location=location,
-                    keywords=keywords,
-                    max_results=max_results,
-                )
-            )
+        result = self.scrape_service.start_scrape(
+            location=location,
+            keywords=keywords,
+            max_results=max_results,
+        )
 
         if isinstance(result, ScrapeResult):
             return result
