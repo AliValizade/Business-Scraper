@@ -6,6 +6,10 @@ from exporters.excel_exporter import ExcelExporter
 from exporters.json_exporter import JSONExporter
 from exporters.service import ExportService
 from app.application import Application
+from services.business_service import BusinessService
+from services.export_service import ExportService as ApplicationExportService
+from services.run_service import RunService
+from services.scrape_service import ScrapeService
 
 
 def create_application(
@@ -68,11 +72,23 @@ def create_application(
         scraper_kwargs=final_scraper_kwargs,
     )
 
+    run_service = RunService(session_factory=session_factory)
+    business_service = BusinessService(session_factory=session_factory)
+    scrape_service = ScrapeService(pipeline=pipeline)
+    application_export_service = ApplicationExportService(
+        export_service=export_service,
+        run_service=run_service,
+    )
+
     return Application(
         pipeline=pipeline,
         registry=registry,
         factory=factory,
         export_service=export_service,
         session_factory=session_factory,
+        scrape_service=scrape_service,
+        run_service=run_service,
+        business_service=business_service,
+        application_export_service=application_export_service,
     )
 
