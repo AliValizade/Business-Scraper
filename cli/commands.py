@@ -1,6 +1,14 @@
 def run_scrape_command(args, application):
-    service = getattr(application, "scrape_service", application)
-    return service.start_scrape(
+    service = getattr(application, "scrape_service", None)
+
+    if service is not None:
+        return service.start_scrape(
+            location=args.location,
+            keywords=args.keywords,
+            max_results=args.max_results,
+        )
+
+    return application.run(
         location=args.location,
         keywords=args.keywords,
         max_results=args.max_results,
