@@ -1,5 +1,7 @@
 from core.request import ScrapeRequest
 
+from .dto import ScrapeRequestDTO, ScrapeResultDTO
+
 
 class ScrapeService:
     """Application service boundary for scrape operations."""
@@ -9,10 +11,32 @@ class ScrapeService:
             raise ValueError("pipeline is required.")
         self.pipeline = pipeline
 
-    def start_scrape(self, location, keywords, max_results=None):
-        request = ScrapeRequest(
-            location=location,
-            keywords=keywords,
-            max_results=max_results,
+    def start_scrape(self, request, keywords=None, max_results=None):
+        if isinstance(request, ScrapeRequestDTO):
+            request_dto = request
+        else:
+            request_dto = ScrapeRequestDTO.from_values(
+                location=request,
+                keywords=keywords,
+                max_results=max_results,
+            )
+
+        core_request = ScrapeRequest(
+            location=request_dto.location,
+            keywords=request_dto.keywords,
+            max_results=request_dto.max_results,
         )
-        return self.pipeline.run(request=request)
+        result = self.pipeline.run(request=core_request)
+        return ScrapeResultDTO(
+            status=result.status,
+            source=result.source,
+            location=result.location,
+            keywords=result.keywords,
+            run_id=result.run_id,
+            total_found=result.total_found,
+            total_new=result.total_new,
+            total_updated=result.total_updated,
+            total_duplicates=result.total_duplicates,
+            total_errors=result.total_errors,
+            error_message=result.error_message,
+        )
