@@ -375,3 +375,32 @@ def test_parser_accepts_positive_numeric_arguments():
         "--output", "out.csv",
     ])
     assert args.run_id == 3
+
+
+def test_run_scrape_command_uses_scrape_service_boundary():
+    application = SimpleNamespace()
+    application.scrape_service = Mock()
+
+    expected = ScrapeResult(
+        status="COMPLETED",
+        source="google_maps",
+        location="مشهد",
+        keywords=("پیتزا",),
+        run_id=1,
+    )
+    application.scrape_service.start_scrape.return_value = expected
+
+    args = SimpleNamespace(
+        location="مشهد",
+        keywords=["پیتزا"],
+        max_results=10,
+    )
+
+    result = run_scrape_command(args, application)
+
+    application.scrape_service.start_scrape.assert_called_once_with(
+        location="مشهد",
+        keywords=["پیتزا"],
+        max_results=10,
+    )
+    assert result is expected
