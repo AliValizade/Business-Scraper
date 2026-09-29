@@ -1,5 +1,6 @@
 def run_scrape_command(args, application):
-    return application.run(
+    service = getattr(application, "scrape_service", application)
+    return service.start_scrape(
         location=args.location,
         keywords=args.keywords,
         max_results=args.max_results,
@@ -21,16 +22,28 @@ def format_scrape_result(result):
 
 def run_export_command(args, application, data=None):
     if getattr(args, "run_id", None) is not None:
-        return application.export_run(
+        service = getattr(application, "application_export_service", application)
+        return service.export_run(
             run_id=args.run_id,
             output_path=args.output_path,
             format_name=args.format_name,
         )
 
     if data is None:
-        data = application.get_businesses()
+        service = getattr(application, "business_service", application)
+        businesses = service.list_businesses()
+        data = [
+            {
+                field: getattr(business, field)
+                for field in business.__dataclass_fields__
+            }
+            if hasattr(business, "__dataclass_fields__")
+            else business
+            for business in businesses
+        ]
 
-    return application.export(
+    service = getattr(application, "application_export_service", application)
+    return service.export(
         data=data,
         output_path=args.output_path,
         format_name=args.format_name,
@@ -38,29 +51,51 @@ def run_export_command(args, application, data=None):
 
 
 def format_export_result(result, format_name):
+    output_path = getattr(result, "output_path", result)
     return (
         f"Export completed successfully.\n"
         f"Format: {format_name}\n"
-        f"Output: {result}"
+        f"Output: {output_path}"
     )
 
 
 def run_list_runs_command(args, application):
-    return application.list_runs(
-        limit=args.limit,
-    )
+    service = getattr(application, "run_service", application)
+    result = service.list_runs(limit=args.limit)
+    return [
+        {
+            field: getattr(run, field)
+            for field in run.__dataclass_fields__
+        }
+        if hasattr(run, "__dataclass_fields__")
+        else run
+        for run in result
+    ]
 
 
 def run_get_run_command(args, application):
-    return application.get_run(
-        run_id=args.run_id,
-    )
+    service = getattr(application, "run_service", application)
+    result = service.get_run(run_id=args.run_id)
+    if hasattr(result, "__dataclass_fields__"):
+        return {
+            field: getattr(result, field)
+            for field in result.__dataclass_fields__
+        }
+    return result
 
 
 def run_get_run_businesses_command(args, application):
-    return application.get_run_businesses(
-        run_id=args.run_id,
-    )
+    service = getattr(application, "run_service", application)
+    result = service.get_run_businesses(run_id=args.run_id)
+    return [
+        {
+            field: getattr(business, field)
+            for field in business.__dataclass_fields__
+        }
+        if hasattr(business, "__dataclass_fields__")
+        else business
+        for business in result
+    ]
 
 
 def format_run(run):
