@@ -1,8 +1,12 @@
-def run_scrape_command(args, application):
-    service = getattr(application, "scrape_service", None)
+from services.business_service import BusinessService
+from services.export_service import ExportService as ApplicationExportService
+from services.run_service import RunService
+from services.scrape_service import ScrapeService
 
-    if service is not None:
-        return service.start_scrape(
+
+def run_scrape_command(args, application):
+    if isinstance(getattr(application, "scrape_service", None), ScrapeService):
+        return application.scrape_service.start_scrape(
             location=args.location,
             keywords=args.keywords,
             max_results=args.max_results,
@@ -24,34 +28,52 @@ def format_scrape_result(result):
         f"Duplicates: {result.total_duplicates}",
         f"Errors: {result.total_errors}",
     ]
-
     return "\n".join(lines)
 
 
 def run_export_command(args, application, data=None):
+    export_service = getattr(application, "application_export_service", None)
+
+    if isinstance(export_service, ApplicationExportService):
+        if getattr(args, "run_id", None) is not None:
+            return export_service.export_run(
+                run_id=args.run_id,
+                output_path=args.output_path,
+                format_name=args.format_name,
+            )
+
+        if data is None:
+            business_service = getattr(application, "business_service", None)
+            if isinstance(business_service, BusinessService):
+                businesses = business_service.list_businesses()
+                data = [
+                    {
+                        field: getattr(business, field)
+                        for field in business.__dataclass_fields__
+                    }
+                    if hasattr(business, "__dataclass_fields__")
+                    else business
+                    for business in businesses
+                ]
+
+        if data is not None:
+            return export_service.export(
+                data=data,
+                output_path=args.output_path,
+                format_name=args.format_name,
+            )
+
     if getattr(args, "run_id", None) is not None:
-        service = getattr(application, "application_export_service", application)
-        return service.export_run(
+        return application.export_run(
             run_id=args.run_id,
             output_path=args.output_path,
             format_name=args.format_name,
         )
 
     if data is None:
-        service = getattr(application, "business_service", application)
-        businesses = service.list_businesses()
-        data = [
-            {
-                field: getattr(business, field)
-                for field in business.__dataclass_fields__
-            }
-            if hasattr(business, "__dataclass_fields__")
-            else business
-            for business in businesses
-        ]
+        data = application.get_businesses()
 
-    service = getattr(application, "application_export_service", application)
-    return service.export(
+    return application.export(
         data=data,
         output_path=args.output_path,
         format_name=args.format_name,
@@ -68,8 +90,12 @@ def format_export_result(result, format_name):
 
 
 def run_list_runs_command(args, application):
-    service = getattr(application, "run_service", application)
-    result = service.list_runs(limit=args.limit)
+    service = getattr(application, "run_service", None)
+    if isinstance(service, RunService):
+        result = service.list_runs(limit=args.limit)
+    else:
+        result = application.list_runs(limit=args.limit)
+
     return [
         {
             field: getattr(run, field)
@@ -82,8 +108,12 @@ def run_list_runs_command(args, application):
 
 
 def run_get_run_command(args, application):
-    service = getattr(application, "run_service", application)
-    result = service.get_run(run_id=args.run_id)
+    service = getattr(application, "run_service", None)
+    if isinstance(service, RunService):
+        result = service.get_run(run_id=args.run_id)
+    else:
+        result = application.get_run(run_id=args.run_id)
+
     if hasattr(result, "__dataclass_fields__"):
         return {
             field: getattr(result, field)
@@ -93,8 +123,12 @@ def run_get_run_command(args, application):
 
 
 def run_get_run_businesses_command(args, application):
-    service = getattr(application, "run_service", application)
-    result = service.get_run_businesses(run_id=args.run_id)
+    service = getattr(application, "run_service", None)
+    if isinstance(service, RunService):
+        result = service.get_run_businesses(run_id=args.run_id)
+    else:
+        result = application.get_run_businesses(run_id=args.run_id)
+
     return [
         {
             field: getattr(business, field)
