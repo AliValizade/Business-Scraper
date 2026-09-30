@@ -79,3 +79,29 @@ def test_desktop_scrape_ui_uses_service_dto_boundary():
     assert "ScrapeRequestDTO.from_values" in source
     assert "ScrapeWorker(" in source
     assert "self.application.scrape_service" in source
+
+
+def test_desktop_runs_and_business_inspection_ui_exists():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    for name in (
+        "runs_table",
+        "businesses_table",
+        "refresh_runs_button",
+        "_load_runs",
+        "_load_selected_run_businesses",
+        "run_service.list_runs",
+        "run_service.get_run_businesses",
+    ):
+        assert name in source
+
+
+def test_desktop_inspection_uses_run_service_boundary():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    assert "self.application.run_service" in source
+    assert "core.models" not in source
