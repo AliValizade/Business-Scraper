@@ -1,4 +1,4 @@
-from PySide6.QtCore import QThread
+from PySide6.QtCore import QSettings, QThread, QSize
 from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
@@ -28,9 +28,14 @@ class MainWindow(QMainWindow):
         self.application = application
         self._scrape_thread = None
         self._scrape_worker = None
+        self.settings = QSettings("Business-Scraper", "Business-Scraper")
 
         self.setWindowTitle("Business-Scraper")
-        self.resize(1200, 800)
+        saved_size = self.settings.value("window_size")
+        if isinstance(saved_size, QSize):
+            self.resize(saved_size)
+        else:
+            self.resize(1200, 800)
 
         central_widget = QWidget(self)
         root_layout = QVBoxLayout(central_widget)
@@ -66,6 +71,13 @@ class MainWindow(QMainWindow):
 
         self.export_format_combo = QComboBox()
         self.export_format_combo.addItems(["csv", "excel", "json"])
+        saved_format = self.settings.value("export_format", "csv")
+        index = self.export_format_combo.findText(str(saved_format))
+        if index >= 0:
+            self.export_format_combo.setCurrentIndex(index)
+        self.export_format_combo.currentTextChanged.connect(
+            lambda value: self.settings.setValue("export_format", value)
+        )
 
         self.export_button = QPushButton("Export Selected Run")
         self.export_button.clicked.connect(self._export_selected_run)
@@ -118,6 +130,21 @@ class MainWindow(QMainWindow):
         if self.application is not None:
             self._load_runs()
 
+    def closeEvent(self, event):
+        if self._scrape_thread is not None and self._scrape_thread.isRunning():
+            self._set_status("A scrape is still running.", error=True)
+            event.ignore()
+            return
+
+        self.settings.setValue("window_size", self.size())
+        super().closeEvent(event)
+
+    def _set_status(self, message, error=False):
+        self.status_label.setText(message)
+        self.status_label.setProperty("error", error)
+        self.status_label.style().unpolish(self.status_label)
+        self.status_label.style().polish(self.status_label)
+
     def _start_scrape(self):
         if self.application is None:
             self.status_label.setText("Application is not configured.")
@@ -157,7 +184,7 @@ class MainWindow(QMainWindow):
             self.status_label.setText("Scraping...")
             self._scrape_thread.start()
         except Exception as exc:
-            self.status_label.setText(f"Error: {exc}")
+            self._set_status(f"Error: {exc}", error=True)
 
     def _on_scrape_finished(self, result):
         self.status_label.setText(f"Status: {result.status}")
@@ -171,7 +198,7 @@ class MainWindow(QMainWindow):
         self._load_runs()
 
     def _on_scrape_failed(self, message):
-        self.status_label.setText(f"Error: {message}")
+        self._set_status(f"Error: {message}", error=True)
 
     def _cancel_scrape(self):
         if self._scrape_worker is not None:
@@ -240,7 +267,7 @@ class MainWindow(QMainWindow):
                 f"Exported {result.exported_count} businesses to {result.output_path}"
             )
         except Exception as exc:
-            self.status_label.setText(f"Export failed: {exc}")
+            self._set_status(f"Export failed: {exc}", error=True)
 
     def _load_runs(self):
         if self.application is None:
@@ -269,7 +296,7 @@ class MainWindow(QMainWindow):
                         QTableWidgetItem(str(value)),
                     )
         except Exception as exc:
-            self.status_label.setText(f"Could not load runs: {exc}")
+            self._set_status(f"Could not load runs: {exc}", error=True)
 
     def _load_selected_run_businesses(self):
         if self.application is None:
@@ -304,6 +331,4 @@ class MainWindow(QMainWindow):
                         QTableWidgetItem(str(value)),
                     )
         except Exception as exc:
-            self.status_label.setText(
-                f"Could not load run businesses: {exc}"
-            )
+            self._set_status(f"Could not load run businesses: {exc}", error=True)
