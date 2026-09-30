@@ -77,4 +77,5 @@ def test_desktop_scrape_ui_uses_service_dto_boundary():
     )
 
     assert "ScrapeRequestDTO.from_values" in source
-    assert "self.application.scrape_service.start_scrape" in source
+    assert "ScrapeWorker(" in source
+    assert "self.application.scrape_service" in source
