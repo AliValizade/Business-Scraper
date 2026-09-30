@@ -54,6 +54,11 @@ class MainWindow(QMainWindow):
         self.scrape_button = QPushButton("Start Scrape")
         self.scrape_button.clicked.connect(self._start_scrape)
         actions.addWidget(self.scrape_button)
+
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.setEnabled(False)
+        self.cancel_button.clicked.connect(self._cancel_scrape)
+        actions.addWidget(self.cancel_button)
         actions.addStretch()
 
         self.status_label = QLabel("Ready.")
@@ -98,8 +103,11 @@ class MainWindow(QMainWindow):
             self._scrape_worker.failed.connect(self._on_scrape_failed)
             self._scrape_worker.finished.connect(self._finish_scrape_thread)
             self._scrape_worker.failed.connect(self._finish_scrape_thread)
+            self._scrape_worker.cancelled.connect(self._on_scrape_cancelled)
+            self._scrape_worker.cancelled.connect(self._finish_scrape_thread)
 
             self.scrape_button.setEnabled(False)
+            self.cancel_button.setEnabled(True)
             self.status_label.setText("Scraping...")
             self._scrape_thread.start()
         except Exception as exc:
@@ -118,6 +126,15 @@ class MainWindow(QMainWindow):
     def _on_scrape_failed(self, message):
         self.status_label.setText(f"Error: {message}")
 
+    def _cancel_scrape(self):
+        if self._scrape_worker is not None:
+            self.status_label.setText("Cancellation requested...")
+            self.cancel_button.setEnabled(False)
+            self._scrape_worker.cancel()
+
+    def _on_scrape_cancelled(self):
+        self.status_label.setText("Scrape cancelled.")
+
     def _finish_scrape_thread(self, *_):
         if self._scrape_thread is not None:
             self._scrape_thread.quit()
@@ -131,3 +148,4 @@ class MainWindow(QMainWindow):
         self._scrape_worker = None
         self._scrape_thread = None
         self.scrape_button.setEnabled(True)
+        self.cancel_button.setEnabled(False)
