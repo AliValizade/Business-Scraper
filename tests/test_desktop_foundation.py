@@ -105,3 +105,29 @@ def test_desktop_inspection_uses_run_service_boundary():
 
     assert "self.application.run_service" in source
     assert "core.models" not in source
+
+
+def test_desktop_export_ui_exists():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    for name in (
+        "export_format_combo",
+        "export_button",
+        "_export_selected_run",
+        "QFileDialog.getSaveFileName",
+        "application.export_service.export_run",
+    ):
+        assert name in source
+
+
+def test_desktop_export_supports_expected_formats():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    assert '"csv"' in source
+    assert '"excel"' in source
+    assert '"json"' in source
+    assert "ExportResultDTO" not in source
