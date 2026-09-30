@@ -11,6 +11,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from PySide6.QtCore import QThread
+
+from interfaces.desktop.scrape_worker import ScrapeWorker
 from services.dto import ScrapeRequestDTO
 
 
@@ -20,6 +23,8 @@ class MainWindow(QMainWindow):
     def __init__(self, application=None):
         super().__init__()
         self.application = application
+        self._scrape_thread = None
+        self._scrape_worker = None
 
         self.setWindowTitle("Business-Scraper")
         self.resize(1000, 700)
@@ -83,8 +88,23 @@ class MainWindow(QMainWindow):
                 keywords=keywords,
                 max_results=max_results,
             )
-            result = self.application.scrape_service.start_scrape(request)
+            self._scrape_thread = QThread(self)
+            self._scrape_worker = ScrapeWorker(
+                self.application.scrape_service,
+                request,
+            )
+            self._scrape_worker.moveToThread(self._scrape_thread)
+            self._scrape_thread.started.connect(self._scrape_worker.run)
+            self._scrape_worker.finished.connect(self._on_scrape_finished)
+            self._scrape_worker.failed.connect(self._on_scrape_failed)
+            self._scrape_worker.finished.connect(self._finish_scrape_thread)
+            self._scrape_worker.failed.connect(self._finish_scrape_thread)
+            self.scrape_button.setEnabled(False)
+            self.status_label.setText("Scraping...")
 
+            self._scrape_thread.start()
+
+    def _on_scrape_finished(self, result):
             self.status_label.setText(f"Status: {result.status}")
             self.result_label.setText(
                 f"Run ID: {result.run_id} | "
@@ -95,3 +115,20 @@ class MainWindow(QMainWindow):
             )
         except Exception as exc:
             self.status_label.setText(f"Error: {exc}")
+
+    def _on_scrape_failed(self, message):
+        self.status_label.setText(f"Error: {message}")
+
+    def _finish_scrape_thread(self, *_):
+        if self._scrape_thread is not None:
+            self._scrape_thread.quit()
+            self._scrape_thread.finished.connect(self._cleanup_scrape_thread)
+
+    def _cleanup_scrape_thread(self):
+        if self._scrape_worker is not None:
+            self._scrape_worker.deleteLater()
+        if self._scrape_thread is not None:
+            self._scrape_thread.deleteLater()
+        self._scrape_worker = None
+        self._scrape_thread = None
+        self.scrape_button.setEnabled(True)
