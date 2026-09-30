@@ -131,3 +131,25 @@ def test_desktop_export_supports_expected_formats():
     assert '"excel"' in source
     assert '"json"' in source
     assert "ExportResultDTO" not in source
+
+
+def test_desktop_settings_and_error_ux_exists():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    assert "QSettings" in source
+    assert '"window_size"' in source
+    assert '"export_format"' in source
+    assert "def closeEvent" in source
+    assert "def _set_status" in source
+    assert "error=True" in source
+
+
+def test_desktop_settings_are_presentation_only():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    assert "config.py" not in source
+    assert "core.models" not in source
