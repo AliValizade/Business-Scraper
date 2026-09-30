@@ -3,3 +3,4 @@ sqlalchemy
 pytest
 openpyxl
 PySide6
+pyinstaller
