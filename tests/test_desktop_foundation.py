@@ -171,3 +171,25 @@ def test_pyinstaller_spec_exists_and_targets_desktop_entrypoint():
     assert '"desktop.py"' in spec
     assert 'name="Business-Scraper"' in spec
     assert "collect_submodules" in spec
+
+
+
+def test_inno_setup_installer_definition_exists():
+    iss = (PROJECT_ROOT / "installer" / "Business-Scraper.iss").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'AppName={#MyAppName}' in iss
+    assert 'DefaultDirName={autopf}\\Business-Scraper' in iss
+    assert 'Source: "dist\\Business-Scraper\\*"' in iss
+    assert 'Filename: "{app}\\{#MyAppExeName}"' in iss
+
+
+def test_desktop_installer_documents_build_and_first_run():
+    readme = (PROJECT_ROOT / "installer" / "README.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "pyinstaller --clean --noconfirm Business-Scraper.spec" in readme
+    assert "dist/Business-Scraper/" in readme
+    assert "initializes the SQLite schema" in readme
