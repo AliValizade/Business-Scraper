@@ -136,3 +136,34 @@ def test_application_adapts_query_dtos_to_legacy_dicts():
     assert application.get_run(3)["id"] == 3
     assert application.get_run_businesses(3)[0]["name"] == "Pizza Sara"
     assert application.get_businesses()[0]["name"] == "Pizza Sara"
+
+
+def test_service_dtos_are_frozen_boundary_objects():
+    dto = ScrapeResultDTO(
+        status="COMPLETED",
+        source="google_maps",
+        location="Mashhad",
+        keywords=("pizza",),
+        run_id=1,
+    )
+
+    try:
+        dto.status = "FAILED"
+    except Exception as exc:
+        assert isinstance(exc, (AttributeError, TypeError))
+    else:
+        raise AssertionError("Service DTOs must be immutable.")
+
+
+def test_service_modules_do_not_expose_core_models():
+    import inspect
+
+    for service_class in (
+        ScrapeService,
+        RunService,
+        BusinessService,
+        ExportService,
+    ):
+        source = inspect.getsource(service_class)
+        assert "return Business(" not in source
+        assert "return ScrapeRun(" not in source
