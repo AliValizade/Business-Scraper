@@ -153,3 +153,21 @@ def test_desktop_settings_are_presentation_only():
 
     assert "config.py" not in source
     assert "core.models" not in source
+
+
+
+def test_desktop_entrypoint_composes_real_application():
+    source = (PROJECT_ROOT / "desktop.py").read_text(encoding="utf-8")
+
+    assert "create_application" in source
+    assert "SessionLocal" in source
+    assert "BrowserManager" in source
+    assert "run_desktop_app(application=application)" in source
+
+
+def test_pyinstaller_spec_exists_and_targets_desktop_entrypoint():
+    spec = (PROJECT_ROOT / "Business-Scraper.spec").read_text(encoding="utf-8")
+
+    assert '"desktop.py"' in spec
+    assert 'name="Business-Scraper"' in spec
+    assert "collect_submodules" in spec
