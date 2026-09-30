@@ -8,6 +8,8 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QPushButton,
     QSpinBox,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -26,7 +28,7 @@ class MainWindow(QMainWindow):
         self._scrape_worker = None
 
         self.setWindowTitle("Business-Scraper")
-        self.resize(1000, 700)
+        self.resize(1200, 800)
 
         central_widget = QWidget(self)
         root_layout = QVBoxLayout(central_widget)
@@ -59,6 +61,10 @@ class MainWindow(QMainWindow):
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(self._cancel_scrape)
         actions.addWidget(self.cancel_button)
+
+        self.refresh_runs_button = QPushButton("Refresh Runs")
+        self.refresh_runs_button.clicked.connect(self._load_runs)
+        actions.addWidget(self.refresh_runs_button)
         actions.addStretch()
 
         self.status_label = QLabel("Ready.")
@@ -68,9 +74,38 @@ class MainWindow(QMainWindow):
         root_layout.addLayout(actions)
         root_layout.addWidget(self.status_label)
         root_layout.addWidget(self.result_label)
+
+        runs_group = QGroupBox("Run History")
+        runs_layout = QVBoxLayout(runs_group)
+
+        self.runs_table = QTableWidget(0, 7)
+        self.runs_table.setHorizontalHeaderLabels(
+            ["ID", "Source", "City", "Keyword", "Status", "Found", "Started"]
+        )
+        self.runs_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.runs_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.runs_table.itemSelectionChanged.connect(self._load_selected_run_businesses)
+        runs_layout.addWidget(self.runs_table)
+
+        businesses_group = QGroupBox("Businesses in Selected Run")
+        businesses_layout = QVBoxLayout(businesses_group)
+
+        self.businesses_table = QTableWidget(0, 6)
+        self.businesses_table.setHorizontalHeaderLabels(
+            ["ID", "Name", "Category", "City", "Phone", "Rating"]
+        )
+        self.businesses_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.businesses_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        businesses_layout.addWidget(self.businesses_table)
+
+        root_layout.addWidget(runs_group)
+        root_layout.addWidget(businesses_group)
         root_layout.addStretch()
 
         self.setCentralWidget(central_widget)
+
+        if self.application is not None:
+            self._load_runs()
 
     def _start_scrape(self):
         if self.application is None:
@@ -122,6 +157,7 @@ class MainWindow(QMainWindow):
             f"Updated: {result.total_updated} | "
             f"Errors: {result.total_errors}"
         )
+        self._load_runs()
 
     def _on_scrape_failed(self, message):
         self.status_label.setText(f"Error: {message}")
@@ -149,3 +185,69 @@ class MainWindow(QMainWindow):
         self._scrape_thread = None
         self.scrape_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
+
+    def _load_runs(self):
+        if self.application is None:
+            return
+
+        try:
+            runs = self.application.run_service.list_runs()
+            self.runs_table.setRowCount(0)
+
+            for run in runs:
+                row = self.runs_table.rowCount()
+                self.runs_table.insertRow(row)
+                values = (
+                    run.id,
+                    run.source,
+                    run.city,
+                    run.keyword,
+                    run.status,
+                    run.total_found,
+                    run.started_at,
+                )
+                for column, value in enumerate(values):
+                    self.runs_table.setItem(
+                        row,
+                        column,
+                        QTableWidgetItem(str(value)),
+                    )
+        except Exception as exc:
+            self.status_label.setText(f"Could not load runs: {exc}")
+
+    def _load_selected_run_businesses(self):
+        if self.application is None:
+            return
+
+        selected = self.runs_table.selectedItems()
+        if not selected:
+            self.businesses_table.setRowCount(0)
+            return
+
+        run_id = int(self.runs_table.item(selected[0].row(), 0).text())
+
+        try:
+            businesses = self.application.run_service.get_run_businesses(run_id)
+            self.businesses_table.setRowCount(0)
+
+            for business in businesses:
+                row = self.businesses_table.rowCount()
+                self.businesses_table.insertRow(row)
+                values = (
+                    business.id,
+                    business.name,
+                    business.category,
+                    business.city,
+                    business.phone,
+                    business.rating,
+                )
+                for column, value in enumerate(values):
+                    self.businesses_table.setItem(
+                        row,
+                        column,
+                        QTableWidgetItem(str(value)),
+                    )
+        except Exception as exc:
+            self.status_label.setText(
+                f"Could not load run businesses: {exc}"
+            )
