@@ -4,6 +4,8 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QFileDialog,
+    QComboBox,
     QLineEdit,
     QMainWindow,
     QPushButton,
@@ -61,6 +63,15 @@ class MainWindow(QMainWindow):
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(self._cancel_scrape)
         actions.addWidget(self.cancel_button)
+
+        self.export_format_combo = QComboBox()
+        self.export_format_combo.addItems(["csv", "excel", "json"])
+
+        self.export_button = QPushButton("Export Selected Run")
+        self.export_button.clicked.connect(self._export_selected_run)
+
+        actions.addWidget(self.export_format_combo)
+        actions.addWidget(self.export_button)
 
         self.refresh_runs_button = QPushButton("Refresh Runs")
         self.refresh_runs_button.clicked.connect(self._load_runs)
@@ -185,6 +196,51 @@ class MainWindow(QMainWindow):
         self._scrape_thread = None
         self.scrape_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
+
+    def _export_selected_run(self):
+        if self.application is None:
+            self.status_label.setText("Application is not configured.")
+            return
+
+        selected = self.runs_table.selectedItems()
+        if not selected:
+            self.status_label.setText("Select a run to export.")
+            return
+
+        run_id = int(self.runs_table.item(selected[0].row(), 0).text())
+        format_name = self.export_format_combo.currentText()
+
+        filters = {
+            "csv": "CSV Files (*.csv)",
+            "excel": "Excel Files (*.xlsx)",
+            "json": "JSON Files (*.json)",
+        }
+        default_extension = {
+            "csv": ".csv",
+            "excel": ".xlsx",
+            "json": ".json",
+        }[format_name]
+
+        output_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Export Run",
+            f"run_{run_id}{default_extension}",
+            filters[format_name],
+        )
+        if not output_path:
+            return
+
+        try:
+            result = self.application.export_service.export_run(
+                run_id=run_id,
+                output_path=output_path,
+                format_name=format_name,
+            )
+            self.status_label.setText(
+                f"Exported {result.exported_count} businesses to {result.output_path}"
+            )
+        except Exception as exc:
+            self.status_label.setText(f"Export failed: {exc}")
 
     def _load_runs(self):
         if self.application is None:
