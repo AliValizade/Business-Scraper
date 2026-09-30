@@ -1,3 +1,4 @@
+from PySide6.QtCore import QThread
 from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
@@ -10,8 +11,6 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-
-from PySide6.QtCore import QThread
 
 from interfaces.desktop.scrape_worker import ScrapeWorker
 from services.dto import ScrapeRequestDTO
@@ -32,8 +31,7 @@ class MainWindow(QMainWindow):
         central_widget = QWidget(self)
         root_layout = QVBoxLayout(central_widget)
 
-        title = QLabel("Business-Scraper")
-        root_layout.addWidget(title)
+        root_layout.addWidget(QLabel("Business-Scraper"))
 
         scrape_group = QGroupBox("Scrape")
         form = QFormLayout(scrape_group)
@@ -88,6 +86,7 @@ class MainWindow(QMainWindow):
                 keywords=keywords,
                 max_results=max_results,
             )
+
             self._scrape_thread = QThread(self)
             self._scrape_worker = ScrapeWorker(
                 self.application.scrape_service,
@@ -99,22 +98,22 @@ class MainWindow(QMainWindow):
             self._scrape_worker.failed.connect(self._on_scrape_failed)
             self._scrape_worker.finished.connect(self._finish_scrape_thread)
             self._scrape_worker.failed.connect(self._finish_scrape_thread)
+
             self.scrape_button.setEnabled(False)
             self.status_label.setText("Scraping...")
-
             self._scrape_thread.start()
-
-    def _on_scrape_finished(self, result):
-            self.status_label.setText(f"Status: {result.status}")
-            self.result_label.setText(
-                f"Run ID: {result.run_id} | "
-                f"Found: {result.total_found} | "
-                f"New: {result.total_new} | "
-                f"Updated: {result.total_updated} | "
-                f"Errors: {result.total_errors}"
-            )
         except Exception as exc:
             self.status_label.setText(f"Error: {exc}")
+
+    def _on_scrape_finished(self, result):
+        self.status_label.setText(f"Status: {result.status}")
+        self.result_label.setText(
+            f"Run ID: {result.run_id} | "
+            f"Found: {result.total_found} | "
+            f"New: {result.total_new} | "
+            f"Updated: {result.total_updated} | "
+            f"Errors: {result.total_errors}"
+        )
 
     def _on_scrape_failed(self, message):
         self.status_label.setText(f"Error: {message}")
