@@ -53,3 +53,28 @@ def test_desktop_dependency_is_declared():
         encoding="utf-8"
     )
     assert "PySide6" in requirements
+
+
+def test_desktop_scrape_ui_exposes_expected_controls():
+    source = (PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py").read_text(
+        encoding="utf-8"
+    )
+
+    for name in (
+        "location_input",
+        "keywords_input",
+        "max_results_input",
+        "scrape_button",
+        "status_label",
+        "result_label",
+    ):
+        assert name in source
+
+
+def test_desktop_scrape_ui_uses_service_dto_boundary():
+    source = (PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "ScrapeRequestDTO.from_values" in source
+    assert "self.application.scrape_service.start_scrape" in source
