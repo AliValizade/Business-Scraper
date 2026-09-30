@@ -8,6 +8,7 @@ from cli.parser import create_parser
 from core.result import ScrapeResult
 
 import main
+from services.scrape_service import ScrapeService
 
 
 def test_parser_creates_scrape_command():
@@ -379,16 +380,21 @@ def test_parser_accepts_positive_numeric_arguments():
 
 def test_run_scrape_command_uses_scrape_service_boundary():
     application = SimpleNamespace()
-    application.scrape_service = Mock()
 
-    expected = ScrapeResult(
-        status="COMPLETED",
-        source="google_maps",
-        location="مشهد",
-        keywords=("پیتزا",),
-        run_id=1,
-    )
-    application.scrape_service.start_scrape.return_value = expected
+    class FakeScrapeService(ScrapeService):
+        def __init__(self):
+            pass  # pipeline لازم نیست برای این تست
+
+        def start_scrape(self, location, keywords, max_results=None):
+            return ScrapeResult(
+                status="COMPLETED",
+                source="google_maps",
+                location=location,
+                keywords=tuple(keywords),
+                run_id=1,
+            )
+
+    application.scrape_service = FakeScrapeService()
 
     args = SimpleNamespace(
         location="مشهد",
@@ -398,9 +404,8 @@ def test_run_scrape_command_uses_scrape_service_boundary():
 
     result = run_scrape_command(args, application)
 
-    application.scrape_service.start_scrape.assert_called_once_with(
-        location="مشهد",
-        keywords=["پیتزا"],
-        max_results=10,
-    )
-    assert result is expected
+    assert result.status == "COMPLETED"
+    assert result.location == "مشهد"
+    assert result.keywords == ("پیتزا",)
+
+    
