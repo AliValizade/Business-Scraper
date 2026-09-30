@@ -2,3 +2,4 @@ playwright
 sqlalchemy
 pytest
 openpyxl
+PySide6
