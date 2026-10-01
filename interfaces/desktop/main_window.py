@@ -234,7 +234,7 @@ class MainWindow(QMainWindow):
         )
         self._load_runs()
         self.progress_bar.setRange(0, 100)
-        self.progress_bar.setValue(100 if result.status == "SUCCESS" else 0)
+        self.progress_bar.setValue(100 if result.status == "COMPLETED" else 0)
         self._restore_scrape_controls()
 
     def _on_scrape_failed(self, message):
