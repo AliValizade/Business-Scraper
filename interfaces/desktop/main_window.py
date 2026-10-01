@@ -171,10 +171,13 @@ class MainWindow(QMainWindow):
                 request,
             )
             self._scrape_worker.moveToThread(self._scrape_thread)
+
             self._scrape_thread.started.connect(self._scrape_worker.run)
+            self._scrape_thread.finished.connect(self._cleanup_scrape_thread)
+
             self._scrape_worker.finished.connect(self._on_scrape_finished)
-            self._scrape_worker.failed.connect(self._on_scrape_failed)
             self._scrape_worker.finished.connect(self._finish_scrape_thread)
+            self._scrape_worker.failed.connect(self._on_scrape_failed)
             self._scrape_worker.failed.connect(self._finish_scrape_thread)
             self._scrape_worker.cancelled.connect(self._on_scrape_cancelled)
             self._scrape_worker.cancelled.connect(self._finish_scrape_thread)
@@ -187,7 +190,14 @@ class MainWindow(QMainWindow):
             self._set_status(f"Error: {exc}", error=True)
 
     def _on_scrape_finished(self, result):
-        self.status_label.setText(f"Status: {result.status}")
+        if result.status == "FAILED" and result.error_message:
+            self._set_status(
+                f"Status: {result.status} | {result.error_message}",
+                error=True,
+            )
+        else:
+            self.status_label.setText(f"Status: {result.status}")
+
         self.result_label.setText(
             f"Run ID: {result.run_id} | "
             f"Found: {result.total_found} | "
@@ -212,7 +222,6 @@ class MainWindow(QMainWindow):
     def _finish_scrape_thread(self, *_):
         if self._scrape_thread is not None:
             self._scrape_thread.quit()
-            self._scrape_thread.finished.connect(self._cleanup_scrape_thread)
 
     def _cleanup_scrape_thread(self):
         if self._scrape_worker is not None:
@@ -258,13 +267,13 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            result = self.application.export_service.export_run(
+            result = self.application.export_run(
                 run_id=run_id,
                 output_path=output_path,
                 format_name=format_name,
             )
             self.status_label.setText(
-                f"Exported {result.exported_count} businesses to {result.output_path}"
+                f"Exported run {run_id} to {result}"
             )
         except Exception as exc:
             self._set_status(f"Export failed: {exc}", error=True)
