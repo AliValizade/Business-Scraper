@@ -1,8 +1,15 @@
 import json
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterable
 
 from exporters.base import BaseExporter
+
+
+def _json_default(value: Any) -> Any:
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return str(value)
 
 
 class JSONExporter(BaseExporter):
@@ -12,6 +19,7 @@ class JSONExporter(BaseExporter):
         self,
         data: Iterable[dict[str, Any]],
         output_path: str | Path,
+        metadata: dict[str, Any] | None = None,
     ) -> Path:
         output_path = Path(output_path)
 
@@ -31,6 +39,7 @@ class JSONExporter(BaseExporter):
                 file,
                 ensure_ascii=False,
                 indent=2,
+                default=_json_default,
             )
 
         return output_path
