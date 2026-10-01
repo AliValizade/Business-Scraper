@@ -3,6 +3,7 @@ from core.result import ScrapeResult
 from services.business_service import BusinessService
 from services.dto import BusinessDTO, RunDTO, ScrapeResultDTO
 from services.export_service import ExportService
+from services.license_service import LicenseService
 from services.run_service import RunService
 from services.scrape_service import ScrapeService
 
@@ -30,6 +31,7 @@ def test_application_exposes_service_boundaries():
     assert isinstance(application.run_service, RunService)
     assert isinstance(application.business_service, BusinessService)
     assert isinstance(application.application_export_service, ExportService)
+    assert isinstance(application.license_service, LicenseService)
 
 
 def test_scrape_service_uses_existing_pipeline():
@@ -163,7 +165,19 @@ def test_service_modules_do_not_expose_core_models():
         RunService,
         BusinessService,
         ExportService,
+        LicenseService,
     ):
         source = inspect.getsource(service_class)
         assert "return Business(" not in source
         assert "return ScrapeRun(" not in source
+
+
+def test_composition_accepts_an_injected_license_service():
+    license_service = LicenseService()
+    application = create_application(
+        session_factory=create_test_session(),
+        browser_manager="fake-browser",
+        license_service=license_service,
+    )
+
+    assert application.license_service is license_service
