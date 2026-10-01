@@ -2,6 +2,7 @@ from PySide6.QtCore import QSettings, QThread, QSize
 from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
+    QProgressBar,
     QHBoxLayout,
     QLabel,
     QFileDialog,
@@ -59,6 +60,21 @@ class MainWindow(QMainWindow):
         form.addRow("Keywords:", self.keywords_input)
         form.addRow("Max results:", self.max_results_input)
 
+        self.license_group = QGroupBox("License")
+        license_layout = QHBoxLayout(self.license_group)
+        self.license_status_label = QLabel()
+        self.license_key_input = QLineEdit()
+        self.license_key_input.setPlaceholderText("License key")
+        self.activate_license_button = QPushButton("Activate")
+        self.activate_license_button.clicked.connect(self._activate_license)
+        license_layout.addWidget(self.license_status_label)
+        license_layout.addWidget(self.license_key_input)
+        license_layout.addWidget(self.activate_license_button)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+
         actions = QHBoxLayout()
         self.scrape_button = QPushButton("Start Scrape")
         self.scrape_button.clicked.connect(self._start_scrape)
@@ -94,6 +110,8 @@ class MainWindow(QMainWindow):
         self.result_label = QLabel("")
 
         root_layout.addWidget(scrape_group)
+        root_layout.addWidget(self.license_group)
+        root_layout.addWidget(self.progress_bar)
         root_layout.addLayout(actions)
         root_layout.addWidget(self.status_label)
         root_layout.addWidget(self.result_label)
@@ -128,6 +146,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         if self.application is not None:
+            self._refresh_license_status()
             self._load_runs()
 
     def closeEvent(self, event):
@@ -158,6 +177,13 @@ class MainWindow(QMainWindow):
         )
         max_results = self.max_results_input.value() or None
 
+        if not location:
+            self._set_status("Location is required.", error=True)
+            return
+        if not keywords:
+            self._set_status("At least one keyword is required.", error=True)
+            return
+
         try:
             request = ScrapeRequestDTO.from_values(
                 location=location,
@@ -184,6 +210,7 @@ class MainWindow(QMainWindow):
 
             self.scrape_button.setEnabled(False)
             self.cancel_button.setEnabled(True)
+            self.progress_bar.setRange(0, 0)
             self.status_label.setText("Scraping...")
             self._scrape_thread.start()
         except Exception as exc:
@@ -206,10 +233,14 @@ class MainWindow(QMainWindow):
             f"Errors: {result.total_errors}"
         )
         self._load_runs()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(100 if result.status == "SUCCESS" else 0)
         self._restore_scrape_controls()
 
     def _on_scrape_failed(self, message):
         self._set_status(f"Error: {message}", error=True)
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
         self._restore_scrape_controls()
 
     def _restore_scrape_controls(self):
@@ -224,6 +255,8 @@ class MainWindow(QMainWindow):
 
     def _on_scrape_cancelled(self):
         self.status_label.setText("Scrape cancelled.")
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
         self._restore_scrape_controls()
 
     def _finish_scrape_thread(self, *_):
@@ -238,6 +271,28 @@ class MainWindow(QMainWindow):
         self._scrape_worker = None
         self._scrape_thread = None
         self._restore_scrape_controls()
+
+    def _refresh_license_status(self):
+        license_info = self.application.license_service.get_license()
+        if license_info.status.value == "active":
+            self.license_status_label.setText(f"Active — {license_info.edition}")
+            self.license_key_input.clear()
+            self.activate_license_button.setEnabled(False)
+        else:
+            self.license_status_label.setText("Unlicensed")
+            self.activate_license_button.setEnabled(True)
+
+    def _activate_license(self):
+        key = self.license_key_input.text().strip()
+        if not key:
+            self._set_status("License key is required.", error=True)
+            return
+        try:
+            self.application.license_service.activate(key)
+            self._refresh_license_status()
+            self._set_status("License activated.")
+        except Exception as exc:
+            self._set_status(f"License activation failed: {exc}", error=True)
 
     def _export_selected_run(self):
         if self.application is None:
