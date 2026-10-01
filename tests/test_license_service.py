@@ -74,14 +74,22 @@ def test_desktop_license_store_round_trips_active_state():
     from interfaces.desktop.license_store import QSettingsLicenseStateStore
     from PySide6.QtCore import QSettings
 
-    settings = QSettings()
+    settings = QSettings("Business-Scraper-Test", "LicenseRoundTrip")
     settings.clear()
+    settings.sync()
     first = LicenseService(store=QSettingsLicenseStateStore(settings))
     activated = first.activate("BS-PERSIST-001")
 
     second = LicenseService(store=QSettingsLicenseStateStore(settings))
-    assert second.get_license() == activated
+    loaded = second.get_license()
+
+    assert loaded.status is LicenseStatus.ACTIVE
+    assert loaded.license_key == activated.license_key
+    assert loaded.product == activated.product
+    assert loaded.edition == activated.edition
+    assert loaded.activated_at is not None
 
     second.deactivate()
     assert second.is_licensed() is False
     settings.clear()
+    settings.sync()
