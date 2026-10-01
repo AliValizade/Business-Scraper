@@ -1,6 +1,21 @@
 # PyInstaller specification for the Business-Scraper desktop application.
 
+import os
+from pathlib import Path
+
 from PyInstaller.utils.hooks import collect_submodules
+
+
+playwright_browsers = (
+    Path(os.environ["USERPROFILE"])
+    / "AppData"
+    / "Local"
+    / "ms-playwright"
+)
+
+datas = []
+if playwright_browsers.exists():
+    datas.append((str(playwright_browsers), "ms-playwright"))
 
 hiddenimports = collect_submodules("services") + collect_submodules("interfaces.desktop")
 
@@ -8,7 +23,7 @@ a = Analysis(
     ["desktop.py"],
     pathex=["."],
     binaries=[],
-    datas=[],
+    datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
