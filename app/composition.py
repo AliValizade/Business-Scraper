@@ -8,6 +8,7 @@ from exporters.service import ExportService
 from app.application import Application
 from services.business_service import BusinessService
 from services.export_service import ExportService as ApplicationExportService
+from services.license_service import LicenseService
 from services.run_service import RunService
 from services.scrape_service import ScrapeService
 
@@ -17,6 +18,7 @@ def create_application(
     browser_manager,
     source="google_maps",
     scraper_kwargs=None,
+    license_service=None,
 ):
     """Create the fully composed application."""
 
@@ -90,5 +92,5 @@ def create_application(
         run_service=run_service,
         business_service=business_service,
         application_export_service=application_export_service,
+        license_service=license_service or LicenseService(),
     )
-
