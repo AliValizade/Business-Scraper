@@ -7,14 +7,13 @@ From the repository root, install the Playwright Chromium browser into the Pytho
 ### Git Bash
 
 ```bash
-PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium
+playwright install chromium
 pyinstaller --clean --noconfirm Business-Scraper.spec
 ```
 
 ### PowerShell
 
 ```powershell
-$env:PLAYWRIGHT_BROWSERS_PATH="0"
 playwright install chromium
 pyinstaller --clean --noconfirm Business-Scraper.spec
 ```
@@ -25,7 +24,7 @@ The expected executable is:
 dist/Business-Scraper.exe
 ```
 
-The bundled Chromium makes the desktop executable self-contained for Playwright browser execution. Playwright documents this PyInstaller approach officially.
+The PyInstaller spec collects the local `ms-playwright` browser directory and places it beside the frozen application payload. The frozen application then points Playwright to that bundled directory at startup.
 
 ## Build the Inno Setup installer
 
