@@ -20,7 +20,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 UninstallDisplayName={#MyAppName}
 
 [Files]
-Source: "dist\Business-Scraper\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "..\dist\Business-Scraper.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
