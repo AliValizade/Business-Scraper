@@ -214,3 +214,36 @@ def test_desktop_installer_documents_build_and_first_run():
     assert "dist/Business-Scraper.exe" in readme
     assert "ms-playwright" in readme
     assert "initializes the SQLite schema" in readme
+
+
+def test_desktop_product_ux_exposes_license_controls():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    for name in (
+        "license_status_label",
+        "license_key_input",
+        "activate_license_button",
+        "_refresh_license_status",
+        "_activate_license",
+    ):
+        assert name in source
+
+
+def test_desktop_product_ux_validates_scrape_inputs():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    assert "Location is required." in source
+    assert "At least one keyword is required." in source
+
+
+def test_desktop_product_ux_exposes_progress_feedback():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    assert "QProgressBar" in source
+    assert "self.progress_bar.setRange(0, 0)" in source
