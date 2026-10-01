@@ -43,6 +43,7 @@ def test_composition_root_is_the_service_wiring_location():
     assert "services.run_service" in imports
     assert "services.business_service" in imports
     assert "services.export_service" in imports
+    assert "services.license_service" in imports
 
 
 def test_service_modules_do_not_import_presentation_layers():
@@ -51,6 +52,7 @@ def test_service_modules_do_not_import_presentation_layers():
         "services/run_service.py",
         "services/business_service.py",
         "services/export_service.py",
+        "services/license_service.py",
     ):
         imports = _imports(path)
         assert not any(
