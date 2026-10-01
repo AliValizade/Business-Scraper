@@ -1,35 +1,60 @@
-# Desktop Installer
+# Business-Scraper Desktop Installer
 
-## Build
+## Build the desktop executable
 
-1. Build the PyInstaller application from the repository root:
+From the repository root, install the Playwright Chromium browser into the Python environment so PyInstaller can bundle it:
 
-```text
+### Git Bash
+
+```bash
+PLAYWRIGHT_BROWSERS_PATH=0 playwright install chromium
 pyinstaller --clean --noconfirm Business-Scraper.spec
 ```
 
-2. Install Inno Setup on the build machine.
+### PowerShell
 
-3. Open `installer/Business-Scraper.iss` with Inno Setup Compiler and build the installer.
-
-The expected PyInstaller output directory is:
-
-```text
-dist/Business-Scraper/
+```powershell
+$env:PLAYWRIGHT_BROWSERS_PATH="0"
+playwright install chromium
+pyinstaller --clean --noconfirm Business-Scraper.spec
 ```
 
-The installer output is:
+The expected executable is:
 
-```text
+```
+dist/Business-Scraper.exe
+```
+
+The bundled Chromium makes the desktop executable self-contained for Playwright browser execution. Playwright documents this PyInstaller approach officially. citeturn0search0
+
+## Build the Inno Setup installer
+
+Open:
+
+```
+installer/Business-Scraper.iss
+```
+
+in Inno Setup and compile it.
+
+The installer expects the one-file executable at:
+
+```
+dist/Business-Scraper.exe
+```
+
+and produces the installer under:
+
+```
 dist/installer/
 ```
 
 ## First run
 
-The desktop entrypoint initializes the SQLite schema before creating the application. The installer does not ship a pre-existing database.
+On first launch, the application initializes the SQLite schema automatically.
 
-The current application keeps its SQLite database under the application's database directory. Moving persistent user data to an OS-specific user-data directory is intentionally deferred until a concrete packaging validation requires it, to avoid an unnecessary domain/infrastructure refactor.
+The current database location remains under the application's database directory. Moving user data to an OS-specific user-data directory is intentionally deferred to avoid an unnecessary infrastructure refactor.
 
-## Uninstall
+## User data
 
-The installer removes the installed application files. User-created database/export data is not explicitly deleted by the installer.
+Uninstalling the application does not explicitly delete user-created database or export data.
