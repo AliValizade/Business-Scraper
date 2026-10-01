@@ -171,6 +171,26 @@ def test_pyinstaller_spec_exists_and_targets_desktop_entrypoint():
     assert '"desktop.py"' in spec
     assert 'name="Business-Scraper"' in spec
     assert "collect_submodules" in spec
+    assert 'Path(os.environ["USERPROFILE"])' in spec
+    assert '"ms-playwright"' in spec
+
+
+def test_playwright_browser_path_configuration_exists():
+    source = (PROJECT_ROOT / "desktop.py").read_text(encoding="utf-8")
+
+    assert "def configure_playwright_browsers_path" in source
+    assert 'getattr(sys, "frozen", False)' in source
+    assert '"PLAYWRIGHT_BROWSERS_PATH"' in source
+    assert 'base / "ms-playwright"' in source
+
+
+def test_desktop_scrape_controls_restore_after_worker_outcomes():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    assert "def _restore_scrape_controls" in source
+    assert "self._restore_scrape_controls()" in source
 
 
 def test_inno_setup_installer_definition_exists():
