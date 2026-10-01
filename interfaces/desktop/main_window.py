@@ -206,9 +206,15 @@ class MainWindow(QMainWindow):
             f"Errors: {result.total_errors}"
         )
         self._load_runs()
+        self._restore_scrape_controls()
 
     def _on_scrape_failed(self, message):
         self._set_status(f"Error: {message}", error=True)
+        self._restore_scrape_controls()
+
+    def _restore_scrape_controls(self):
+        self.scrape_button.setEnabled(True)
+        self.cancel_button.setEnabled(False)
 
     def _cancel_scrape(self):
         if self._scrape_worker is not None:
@@ -218,6 +224,7 @@ class MainWindow(QMainWindow):
 
     def _on_scrape_cancelled(self):
         self.status_label.setText("Scrape cancelled.")
+        self._restore_scrape_controls()
 
     def _finish_scrape_thread(self, *_):
         if self._scrape_thread is not None:
@@ -230,8 +237,7 @@ class MainWindow(QMainWindow):
             self._scrape_thread.deleteLater()
         self._scrape_worker = None
         self._scrape_thread = None
-        self.scrape_button.setEnabled(True)
-        self.cancel_button.setEnabled(False)
+        self._restore_scrape_controls()
 
     def _export_selected_run(self):
         if self.application is None:
