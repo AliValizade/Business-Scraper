@@ -25,7 +25,7 @@ The expected executable is:
 dist/Business-Scraper.exe
 ```
 
-The bundled Chromium makes the desktop executable self-contained for Playwright browser execution. Playwright documents this PyInstaller approach officially. citeturn0search0
+The bundled Chromium makes the desktop executable self-contained for Playwright browser execution. Playwright documents this PyInstaller approach officially.
 
 ## Build the Inno Setup installer
 
