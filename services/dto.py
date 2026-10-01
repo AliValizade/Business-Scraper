@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import Enum
 from datetime import datetime
 from typing import Any
 
@@ -79,3 +80,17 @@ class ExportResultDTO:
     output_path: Any
     format_name: str
     exported_count: int | None = None
+
+
+class LicenseStatus(str, Enum):
+    UNLICENSED = "unlicensed"
+    ACTIVE = "active"
+
+
+@dataclass(frozen=True)
+class LicenseInfoDTO:
+    status: LicenseStatus
+    product: str
+    edition: str
+    license_key: str | None = None
+    activated_at: datetime | None = None
