@@ -209,7 +209,8 @@ def test_desktop_installer_documents_build_and_first_run():
         encoding="utf-8"
     )
 
-    assert "PLAYWRIGHT_BROWSERS_PATH=0" in readme
+    assert "playwright install chromium" in readme
     assert "pyinstaller --clean --noconfirm Business-Scraper.spec" in readme
     assert "dist/Business-Scraper.exe" in readme
+    assert "ms-playwright" in readme
     assert "initializes the SQLite schema" in readme
