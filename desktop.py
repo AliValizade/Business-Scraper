@@ -7,6 +7,7 @@ from browser.manager import BrowserManager
 from database.database import SessionLocal, init_db
 from interfaces.desktop.app import run_desktop_app
 from interfaces.desktop.license_store import QSettingsLicenseStateStore
+from services.license_service import LicenseService
 
 
 def configure_playwright_browsers_path() -> None:
@@ -27,7 +28,7 @@ def create_desktop_application():
         session_factory=SessionLocal,
         browser_manager=BrowserManager(),
         source="google_maps",
-        license_service=None,
+        license_service=LicenseService(store=QSettingsLicenseStateStore()),
     )
 
 
