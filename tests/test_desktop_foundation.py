@@ -117,7 +117,7 @@ def test_desktop_export_ui_exists():
         "export_button",
         "_export_selected_run",
         "QFileDialog.getSaveFileName",
-        "application.export_service.export_run",
+        "self.application.export_run",
     ):
         assert name in source
 
@@ -173,7 +173,6 @@ def test_pyinstaller_spec_exists_and_targets_desktop_entrypoint():
     assert "collect_submodules" in spec
 
 
-
 def test_inno_setup_installer_definition_exists():
     iss = (PROJECT_ROOT / "installer" / "Business-Scraper.iss").read_text(
         encoding="utf-8"
@@ -181,7 +180,7 @@ def test_inno_setup_installer_definition_exists():
 
     assert 'AppName={#MyAppName}' in iss
     assert 'DefaultDirName={autopf}\\Business-Scraper' in iss
-    assert 'Source: "dist\\Business-Scraper\\*"' in iss
+    assert 'Source: "..\\dist\\Business-Scraper.exe"' in iss
     assert 'Filename: "{app}\\{#MyAppExeName}"' in iss
 
 
@@ -190,6 +189,7 @@ def test_desktop_installer_documents_build_and_first_run():
         encoding="utf-8"
     )
 
+    assert "PLAYWRIGHT_BROWSERS_PATH=0" in readme
     assert "pyinstaller --clean --noconfirm Business-Scraper.spec" in readme
-    assert "dist/Business-Scraper/" in readme
+    assert "dist/Business-Scraper.exe" in readme
     assert "initializes the SQLite schema" in readme
