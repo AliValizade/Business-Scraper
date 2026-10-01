@@ -68,3 +68,20 @@ def test_license_service_validates_product_and_edition():
         LicenseService(edition=123)
     with pytest.raises(ValueError):
         LicenseService(edition="   ")
+
+
+def test_desktop_license_store_round_trips_active_state():
+    from interfaces.desktop.license_store import QSettingsLicenseStateStore
+    from PySide6.QtCore import QSettings
+
+    settings = QSettings()
+    settings.clear()
+    first = LicenseService(store=QSettingsLicenseStateStore(settings))
+    activated = first.activate("BS-PERSIST-001")
+
+    second = LicenseService(store=QSettingsLicenseStateStore(settings))
+    assert second.get_license() == activated
+
+    second.deactivate()
+    assert second.is_licensed() is False
+    settings.clear()
