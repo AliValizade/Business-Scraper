@@ -1,6 +1,7 @@
 from core.result import ScrapeResult
 from services.business_service import BusinessService
 from services.export_service import ExportService as ApplicationExportService
+from services.license_service import LicenseService
 from services.run_service import RunService
 from services.scrape_service import ScrapeService
 
@@ -21,6 +22,7 @@ class Application:
         run_service=None,
         business_service=None,
         application_export_service=None,
+        license_service=None,
     ):
         if pipeline is None:
             raise ValueError("pipeline is required.")
@@ -63,6 +65,7 @@ class Application:
                 else None
             )
         )
+        self.license_service = license_service or LicenseService()
 
     def run(self, location, keywords, max_results=None):
         result = self.scrape_service.start_scrape(
