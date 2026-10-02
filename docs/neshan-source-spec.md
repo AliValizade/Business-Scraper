@@ -286,9 +286,11 @@ Phase 5.1/5.2 will not:
 
 Implemented `NeshanScraper`, API transport abstraction, environment-based API key handling, Geocoding → Search → optional POI Details flow, result mapping, source error isolation, 30-result cap, Registry integration, and unit/contract tests.
 
-### Phase 5.3 — Next
+### Phase 5.3 — Implementation Complete; Live Validation Pending
 
-Register/validate Neshan through the complete application pipeline and perform a real API test with a valid Neshan key.
+Neshan is now wired through the complete application composition, Factory/Registry, ScrapePipeline, database persistence, run history, and normalized Business model. Integration tests validate the complete in-process flow and source isolation.
+
+Live API validation remains an environment-dependent acceptance step and requires a valid Neshan API key with the Search API enabled. The official Neshan documentation currently states that Search API activation requires contacting platform support. citeturn1view1
 
 ### Phase 5.4 — Next
 
