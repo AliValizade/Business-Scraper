@@ -21,14 +21,38 @@ def configure_playwright_browsers_path() -> None:
         os.environ["PLAYWRIGHT_BROWSERS_PATH"] = str(browsers)
 
 
+def get_desktop_source() -> str:
+    """Read the desktop source from configuration."""
+    return os.getenv(
+        "BUSINESS_SCRAPER_SOURCE",
+        "google_maps",
+    ).strip().lower()
+
+
+def get_desktop_scraper_kwargs(source: str) -> dict:
+    """Build source-specific desktop scraper configuration."""
+    if source == "neshan":
+        return {
+            "api_key": os.getenv("NESHAN_API_KEY"),
+        }
+
+    return {}
+
+
 def create_desktop_application():
     configure_playwright_browsers_path()
     init_db()
+
+    source = get_desktop_source()
+
     return create_application(
         session_factory=SessionLocal,
         browser_manager=BrowserManager(),
-        source="google_maps",
-        license_service=LicenseService(store=QSettingsLicenseStateStore()),
+        source=source,
+        scraper_kwargs=get_desktop_scraper_kwargs(source),
+        license_service=LicenseService(
+            store=QSettingsLicenseStateStore()
+        ),
     )
 
 
