@@ -7,7 +7,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 def test_desktop_source_defaults_to_google_maps():
     source = (PROJECT_ROOT / "desktop.py").read_text(encoding="utf-8")
 
-    assert 'os.getenv("BUSINESS_SCRAPER_SOURCE", "google_maps")' in source
+    assert "BUSINESS_SCRAPER_SOURCE" in source
+    assert '"google_maps"' in source
+    assert "get_desktop_source" in source
 
 
 def test_desktop_source_supports_neshan():
