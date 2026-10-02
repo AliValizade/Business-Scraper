@@ -41,4 +41,4 @@ def test_default_registry_can_create_google_maps_scraper():
 def test_default_registry_sources():
     registry = create_default_registry()
 
-    assert registry.sources() == ("google_maps",)
+    assert registry.sources() == ("google_maps", "neshan")
