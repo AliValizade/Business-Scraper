@@ -1,4 +1,5 @@
 from scrapers.google_maps import GoogleMapsScraper
+from scrapers.neshan import NeshanScraper
 from scrapers.registry import ScraperRegistry
 
 
@@ -9,6 +10,11 @@ def create_default_registry():
     registry.register(
         "google_maps",
         GoogleMapsScraper,
+    )
+
+    registry.register(
+        "neshan",
+        NeshanScraper,
     )
 
     return registry
