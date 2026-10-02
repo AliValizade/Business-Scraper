@@ -57,3 +57,25 @@ The current database location remains under the application's database directory
 ## User data
 
 Uninstalling the application does not explicitly delete user-created database or export data.
+
+## Source configuration
+
+The desktop application uses Google Maps by default. To run the same executable with Neshan, configure the environment before launching it.
+
+### Git Bash
+
+```bash
+export BUSINESS_SCRAPER_SOURCE=neshan
+export NESHAN_API_KEY="your-api-key"
+./dist/Business-Scraper.exe
+```
+
+### PowerShell
+
+```powershell
+$env:BUSINESS_SCRAPER_SOURCE = "neshan"
+$env:NESHAN_API_KEY = "your-api-key"
+.\\dist\\Business-Scraper.exe
+```
+
+If `BUSINESS_SCRAPER_SOURCE` is omitted, Google Maps remains the default. The API key is never stored in the repository or embedded in the executable.
