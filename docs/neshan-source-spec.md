@@ -61,7 +61,7 @@ The implementation must NOT hard-code an API key.
 Planned configuration:
 
 ```text
-NEShan_API_KEY
+NESHHAN_API_KEY
 ```
 
 Canonical environment variable:
