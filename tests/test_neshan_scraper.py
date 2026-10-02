@@ -146,6 +146,16 @@ def test_neshan_keeps_result_when_poi_enrichment_fails():
         {
             "items": [
                 {
+                    "location": {
+                        "latitude": 35.7,
+                        "longitude": 51.4,
+                    }
+                }
+            ]
+        },
+        {
+            "items": [
+                {
                     "title": "کسب و کار",
                     "address": "تهران",
                     "location": {"x": 51.4, "y": 35.7},
