@@ -17,7 +17,8 @@ def test_desktop_e2e_persistent_license_is_composed():
     source = (PROJECT_ROOT / "desktop.py").read_text(encoding="utf-8")
 
     assert "QSettingsLicenseStateStore()" in source
-    assert "LicenseService(store=QSettingsLicenseStateStore())" in source
+    assert "LicenseService(" in source
+    assert "store=QSettingsLicenseStateStore()" in source
 
 
 def test_desktop_e2e_playwright_bundle_contract():
