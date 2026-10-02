@@ -107,7 +107,7 @@ def test_neshan_runs_through_full_application_pipeline():
     assert businesses[0]["source"] == "neshan"
     assert businesses[0]["source_id"] == "neshan-001"
     assert businesses[0]["name"] == "کسب و کار نمونه"
-    assert businesses[0]["phone"] == "02112345678"
+    assert businesses[0]["phone"] == "+982112345678"
 
     runs = application.list_runs()
 
