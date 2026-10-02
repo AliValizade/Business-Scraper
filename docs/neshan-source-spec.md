@@ -5,7 +5,7 @@
 **Phase:** 5.1
 **Source:** Neshan
 **Source key:** `neshan`
-**Status:** Specification complete; implementation blocked only on a valid Neshan API key/service activation for real integration testing.
+**Status:** Specification complete; Phase 5.2 implementation complete. Live API validation still requires a valid Neshan API key with the required services enabled.
 
 ## 1. Goal
 
@@ -282,13 +282,13 @@ Phase 5.1/5.2 will not:
 - test contract
 - implementation blockers identified
 
-### Phase 5.2 — Next
+### Phase 5.2 — Complete
 
-Implement `NeshanScraper` and the minimal infrastructure required for API-based sources, then add unit/contract tests.
+Implemented `NeshanScraper`, API transport abstraction, environment-based API key handling, Geocoding → Search → optional POI Details flow, result mapping, source error isolation, 30-result cap, Registry integration, and unit/contract tests.
 
 ### Phase 5.3 — Next
 
-Register Neshan in the default registry and validate the complete pipeline with a real API key.
+Register/validate Neshan through the complete application pipeline and perform a real API test with a valid Neshan key.
 
 ### Phase 5.4 — Next
 
