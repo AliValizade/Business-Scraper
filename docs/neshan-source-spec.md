@@ -292,6 +292,12 @@ Neshan is now wired through the complete application composition, Factory/Regist
 
 Live API validation remains an environment-dependent acceptance step and requires a valid Neshan API key with the Search API enabled. The official Neshan documentation currently states that Search API activation requires contacting platform support. citeturn1view1
 
-### Phase 5.4 — Next
+### Phase 5.4 — Desktop Configuration Complete
+
+The desktop entrypoint now supports configuration-based source selection without adding a source selector to the GUI. `BUSINESS_SCRAPER_SOURCE` defaults to `google_maps`; setting it to `neshan` selects the Neshan adapter, while `NESHAN_API_KEY` supplies the credential through the environment. Google Maps remains the default and existing UI behavior is unchanged.
+
+Packaging does not require a source-specific code path; the same executable reads the environment at startup.
+
+### Phase 5.5 — Next
 
 Desktop source selection/configuration and packaged application validation, if required after CLI/core validation.
