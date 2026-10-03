@@ -684,7 +684,6 @@ def test_pipeline_uses_registry_source():
     request = ScrapeRequest(
         location="مشهد",
         keywords=["پیتزا"],
-        access_mode="web",
         source="fake",
         access_mode="web",
     )
