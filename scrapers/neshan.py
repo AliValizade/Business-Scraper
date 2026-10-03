@@ -21,7 +21,7 @@ class NeshanAPIError(RuntimeError):
 
 
 class NeshanScraper(BaseScraper):
-    """API-based scraper for Neshan business/location search."""
+    """Neshan scraper supporting Web and API access modes."""
 
     BASE_URL = "https://api.neshan.org"
     SEARCH_PATH = "/v3/search"
@@ -35,8 +35,20 @@ class NeshanScraper(BaseScraper):
         api_key=None,
         http_get=None,
         max_results=None,
+        access_mode="web",
+        mode=None,
     ):
         super().__init__(browser_manager)
+
+        if mode is not None:
+            access_mode = mode
+
+        access_mode = str(access_mode).strip().lower()
+        if access_mode not in {"web", "api"}:
+            raise ValueError("access_mode must be 'web' or 'api'.")
+
+        self.access_mode = access_mode
+        self.mode = access_mode
 
         self.api_key = (
             api_key
@@ -61,6 +73,9 @@ class NeshanScraper(BaseScraper):
             raise ValueError("max_results must be greater than zero.")
 
     def _require_api_key(self):
+        if self.access_mode != "api":
+            return
+
         if not isinstance(self.api_key, str) or not self.api_key.strip():
             raise ValueError(
                 "Neshan API key is required. "
@@ -275,6 +290,11 @@ class NeshanScraper(BaseScraper):
         }
 
     def search(self, query, location):
+        if self.access_mode == "web":
+            raise NotImplementedError(
+                "Neshan Web mode is not implemented in this adapter yet."
+            )
+
         self.set_state(ScraperState.SEARCHING)
 
         self.search_keyword = query
