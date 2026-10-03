@@ -7,8 +7,26 @@ class ScrapeRequest:
     location: str
     keywords: tuple[str, ...]
     max_results: int | None = None
+    source: str = "google_maps"
+    access_mode: str = "web"
+    api_key: str | None = None
 
     def __post_init__(self):
+        if not isinstance(self.source, str):
+            raise TypeError("source must be a string.")
+        source = self.source.strip()
+        if not source:
+            raise ValueError("source cannot be empty.")
+
+        if not isinstance(self.access_mode, str):
+            raise TypeError("access_mode must be a string.")
+        access_mode = self.access_mode.strip().lower()
+        if access_mode not in {"web", "api"}:
+            raise ValueError("access_mode must be 'web' or 'api'.")
+
+        if self.api_key is not None and not isinstance(self.api_key, str):
+            raise TypeError("api_key must be a string or None.")
+
         if not isinstance(self.location, str):
             raise TypeError("location must be a string.")
 
@@ -44,5 +62,8 @@ class ScrapeRequest:
             if self.max_results <= 0:
                 raise ValueError("max_results must be greater than zero.")
 
+        object.__setattr__(self, "source", source)
+        object.__setattr__(self, "access_mode", access_mode)
+        object.__setattr__(self, "api_key", self.api_key.strip() if isinstance(self.api_key, str) else None)
         object.__setattr__(self, "location", location)
         object.__setattr__(self, "keywords", tuple(normalized_keywords))
