@@ -49,6 +49,22 @@ class MainWindow(QMainWindow):
         self.location_input = QLineEdit()
         self.location_input.setPlaceholderText("City or location")
 
+        self.source_combo = QComboBox()
+        self.source_combo.addItem("Google Maps", "google_maps")
+        self.source_combo.addItem("Neshan", "neshan")
+
+        self.access_mode_combo = QComboBox()
+        self.access_mode_combo.addItem("Web", "web")
+        self.access_mode_combo.addItem("API", "api")
+        self.source_combo.currentIndexChanged.connect(
+            self._on_source_changed
+        )
+
+        self.api_key_input = QLineEdit()
+        self.api_key_input.setPlaceholderText("API key")
+        self.api_key_input.setEchoMode(QLineEdit.Password)
+        self.api_key_input.setEnabled(False)
+
         self.keywords_input = QLineEdit()
         self.keywords_input.setPlaceholderText("Keyword 1, Keyword 2")
 
@@ -56,6 +72,9 @@ class MainWindow(QMainWindow):
         self.max_results_input.setRange(0, 10000)
         self.max_results_input.setSpecialValueText("No limit")
 
+        form.addRow("Source:", self.source_combo)
+        form.addRow("Access mode:", self.access_mode_combo)
+        form.addRow("API key:", self.api_key_input)
         form.addRow("Location:", self.location_input)
         form.addRow("Keywords:", self.keywords_input)
         form.addRow("Max results:", self.max_results_input)
@@ -145,6 +164,7 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
+        self._on_source_changed()
         if self.application is not None:
             self._refresh_license_status()
             self._load_runs()
@@ -164,6 +184,21 @@ class MainWindow(QMainWindow):
         self.status_label.style().unpolish(self.status_label)
         self.status_label.style().polish(self.status_label)
 
+    def _on_source_changed(self):
+        is_api = self.access_mode_combo.currentData() == "api"
+        self.api_key_input.setEnabled(is_api)
+
+        source = self.source_combo.currentData()
+        if source == "google_maps" and is_api:
+            self.api_key_input.setPlaceholderText(
+                "Google Maps API key — API adapter pending"
+            )
+        elif source == "neshan" and is_api:
+            self.api_key_input.setPlaceholderText("Neshan API key")
+        else:
+            self.api_key_input.clear()
+            self.api_key_input.setPlaceholderText("API key")
+
     def _start_scrape(self):
         if self.application is None:
             self.status_label.setText("Application is not configured.")
@@ -176,6 +211,9 @@ class MainWindow(QMainWindow):
             if keyword.strip()
         )
         max_results = self.max_results_input.value() or None
+        source = self.source_combo.currentData()
+        access_mode = self.access_mode_combo.currentData()
+        api_key = self.api_key_input.text().strip() or None
 
         if not location:
             self._set_status("Location is required.", error=True)
@@ -189,6 +227,9 @@ class MainWindow(QMainWindow):
                 location=location,
                 keywords=keywords,
                 max_results=max_results,
+                source=source,
+                access_mode=access_mode,
+                api_key=api_key,
             )
 
             self._scrape_thread = QThread(self)
@@ -223,7 +264,10 @@ class MainWindow(QMainWindow):
                 error=True,
             )
         else:
-            self.status_label.setText(f"Status: {result.status}")
+            self.status_label.setText(
+                f"Status: {result.status} | "
+                f"{result.source} / {result.access_mode}"
+            )
 
         self.result_label.setText(
             f"Run ID: {result.run_id} | "
