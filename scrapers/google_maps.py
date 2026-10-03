@@ -13,8 +13,20 @@ logger = get_logger(__name__)
 class GoogleMapsScraper(BaseScraper):
     BASE_SEARCH_URL = "https://www.google.com/maps/search/"
 
-    def __init__(self, browser_manager):
+    def __init__(self, browser_manager, access_mode="web", api_key=None):
         super().__init__(browser_manager)
+
+        access_mode = str(access_mode).strip().lower()
+        if access_mode != "web":
+            raise ValueError(
+                "Google Maps API mode is not implemented yet."
+            )
+        if api_key is not None:
+            raise ValueError(
+                "Google Maps API key is not accepted in web mode."
+            )
+
+        self.access_mode = access_mode
 
         self.search_keyword = None
         self.search_location = None

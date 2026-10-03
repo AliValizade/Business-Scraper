@@ -146,3 +146,26 @@ def test_scrape_request_rejects_invalid_max_results_type(value):
 
 
 
+
+
+def test_scrape_request_accepts_source_and_access_mode():
+    request = ScrapeRequest(
+        location="مشهد",
+        keywords=["پیتزا"],
+        source="neshan",
+        access_mode="api",
+        api_key="secret",
+    )
+
+    assert request.source == "neshan"
+    assert request.access_mode == "api"
+    assert request.api_key == "secret"
+
+
+def test_scrape_request_rejects_invalid_access_mode():
+    with pytest.raises(ValueError, match="access_mode"):
+        ScrapeRequest(
+            location="مشهد",
+            keywords=["پیتزا"],
+            access_mode="desktop",
+        )

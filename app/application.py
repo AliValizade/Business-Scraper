@@ -67,12 +67,43 @@ class Application:
         )
         self.license_service = license_service or LicenseService()
 
-    def run(self, location, keywords, max_results=None):
-        result = self.scrape_service.start_scrape(
-            location=location,
-            keywords=keywords,
-            max_results=max_results,
+    def run(self, location, keywords, max_results=None, source=None, access_mode=None, api_key=None):
+        configured_source = getattr(self.pipeline, "source", "google_maps")
+        if not isinstance(configured_source, str):
+            configured_source = "google_maps"
+
+        configured_mode = getattr(
+            getattr(self.pipeline, "scraper", None),
+            "access_mode",
+            "web",
         )
+        if not isinstance(configured_mode, str):
+            configured_mode = "web"
+
+        source = configured_source if source is None else source
+        access_mode = configured_mode if access_mode is None else access_mode
+
+        legacy_defaults = (
+            source == "google_maps"
+            and access_mode == "web"
+            and api_key is None
+        )
+
+        if legacy_defaults:
+            result = self.scrape_service.start_scrape(
+                location=location,
+                keywords=keywords,
+                max_results=max_results,
+            )
+        else:
+            result = self.scrape_service.start_scrape(
+                location=location,
+                keywords=keywords,
+                max_results=max_results,
+                source=source,
+                access_mode=access_mode,
+                api_key=api_key,
+            )
 
         if isinstance(result, ScrapeResult):
             return result
@@ -80,6 +111,7 @@ class Application:
         return ScrapeResult(
             status=result.status,
             source=result.source,
+            access_mode=result.access_mode,
             location=result.location,
             keywords=result.keywords,
             run_id=result.run_id,
@@ -128,6 +160,7 @@ class Application:
                 key: run.get(key)
                 for key in (
                     "source",
+                    "access_mode",
                     "city",
                     "keyword",
                     "started_at",

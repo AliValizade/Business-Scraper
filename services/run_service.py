@@ -93,6 +93,7 @@ class RunService:
         return RunDTO(
             id=scrape_run.id,
             source=scrape_run.source,
+            access_mode=scrape_run.access_mode,
             city=scrape_run.city,
             keyword=scrape_run.keyword,
             started_at=scrape_run.started_at,

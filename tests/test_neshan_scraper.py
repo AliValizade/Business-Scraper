@@ -24,7 +24,7 @@ def make_http_get(responses):
 def test_neshan_requires_api_key(monkeypatch):
     monkeypatch.delenv("NESHAN_API_KEY", raising=False)
 
-    scraper = NeshanScraper()
+    scraper = NeshanScraper(mode="api")
 
     with pytest.raises(ValueError, match="API key"):
         scraper.search("رستوران", "مشهد")
@@ -76,6 +76,7 @@ def test_neshan_search_builds_v3_query_and_maps_coordinates():
     scraper = NeshanScraper(
         api_key="test-key",
         http_get=http_get,
+    mode="api",
     )
 
     scraper.search("رستوران", "مشهد")
@@ -134,6 +135,7 @@ def test_neshan_limits_results_to_thirty():
     scraper = NeshanScraper(
         api_key="test-key",
         http_get=http_get,
+    mode="api",
     )
 
     scraper.search("کافه", "تهران")
@@ -171,6 +173,7 @@ def test_neshan_keeps_result_when_poi_enrichment_fails():
     scraper = NeshanScraper(
         api_key="test-key",
         http_get=http_get,
+    mode="api",
     )
 
     scraper.search("کسب و کار", "تهران")
@@ -197,7 +200,7 @@ def test_neshan_maps_instagram_when_explicitly_identified():
         ]
     }
 
-    scraper = NeshanScraper(api_key="test-key")
+    scraper = NeshanScraper(api_key="test-key", mode="api")
 
     business = scraper._map_business(item, details)
 
@@ -219,6 +222,7 @@ def test_neshan_invalid_http_status_raises():
     scraper = NeshanScraper(
         api_key="test-key",
         http_get=http_get,
+    mode="api",
     )
 
     with pytest.raises(NeshanAPIError) as error:
@@ -234,9 +238,75 @@ def test_neshan_search_failure_sets_failed_state():
     scraper = NeshanScraper(
         api_key="test-key",
         http_get=http_get,
+    mode="api",
     )
 
     with pytest.raises(NeshanAPIError):
         scraper.search("کافه", "تهران")
 
     assert scraper.state is ScraperState.FAILED
+
+    
+def test_neshan_defaults_to_web_mode():
+    scraper = NeshanScraper()
+    assert scraper.mode == "web"
+
+
+def test_neshan_api_mode_requires_key(monkeypatch):
+    monkeypatch.delenv("NESHAN_API_KEY", raising=False)
+    scraper = NeshanScraper(mode="api")
+
+    with pytest.raises(ValueError, match="API key"):
+        scraper.search("رستوران", "مشهد")
+
+
+def test_neshan_web_mode_combines_query_and_location():
+    class FakeLocator:
+        def __init__(self):
+            self.filled = None
+            self.pressed = None
+
+        @property
+        def first(self):
+            return self
+
+        def count(self):
+            return 1
+
+        def wait_for(self, **_kwargs):
+            return None
+
+        def fill(self, value):
+            self.filled = value
+
+        def press(self, value):
+            self.pressed = value
+
+    class FakePage:
+        def __init__(self):
+            self.url = ""
+            self.input = FakeLocator()
+            self.results = FakeLocator()
+
+        def goto(self, url, **_kwargs):
+            self.url = url
+
+        def locator(self, selector):
+            if selector == "input.AZLBjuP":
+                return self.input
+            return self.results
+
+    class FakeBrowser:
+        def __init__(self):
+            self.page = FakePage()
+
+    scraper = NeshanScraper(
+        browser_manager=FakeBrowser(),
+        mode="web",
+    )
+
+    scraper.search("فست فود", "مشهد")
+
+    assert scraper.page.input.filled == "فست فود مشهد"
+    assert scraper.page.input.pressed == "Enter"
+    assert scraper.state is ScraperState.LOADING

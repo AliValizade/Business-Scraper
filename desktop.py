@@ -43,13 +43,9 @@ def create_desktop_application():
     configure_playwright_browsers_path()
     init_db()
 
-    source = get_desktop_source()
-
     return create_application(
         session_factory=SessionLocal,
         browser_manager=BrowserManager(),
-        source=source,
-        scraper_kwargs=get_desktop_scraper_kwargs(source),
         license_service=LicenseService(
             store=QSettingsLicenseStateStore()
         ),

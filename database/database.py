@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 
@@ -35,3 +35,19 @@ def init_db():
     Base.metadata.create_all(
         bind=engine
     )
+
+    inspector = inspect(engine)
+    if "scrape_runs" in inspector.get_table_names():
+        columns = {
+            column["name"]
+            for column in inspector.get_columns("scrape_runs")
+        }
+        if "access_mode" not in columns:
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "ALTER TABLE scrape_runs "
+                        "ADD COLUMN access_mode VARCHAR(20) "
+                        "NOT NULL DEFAULT 'web'"
+                    )
+                )

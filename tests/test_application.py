@@ -336,6 +336,7 @@ def test_application_export_run_builds_excel_summary_metadata():
         format_name="excel",
         metadata={
             "source": "google_maps",
+            "access_mode": None,
             "city": "Mashhad",
             "keyword": "Fast Food",
             "started_at": "started",
@@ -376,3 +377,31 @@ def test_application_export_run_does_not_add_metadata_for_csv():
         output_path="output/run.csv",
         format_name="csv",
     )
+
+
+def test_application_run_passes_source_and_access_mode():
+    pipeline = Mock()
+    pipeline.run.return_value = ScrapeResult(
+        status="COMPLETED",
+        source="neshan",
+        access_mode="api",
+        location="مشهد",
+        keywords=("رستوران",),
+        run_id=1,
+    )
+
+    application = Application(pipeline=pipeline)
+
+    application.run(
+        location="مشهد",
+        keywords=["رستوران"],
+        source="neshan",
+        access_mode="api",
+        api_key="secret",
+    )
+
+    request = pipeline.run.call_args.kwargs["request"]
+
+    assert request.source == "neshan"
+    assert request.access_mode == "api"
+    assert request.api_key == "secret"

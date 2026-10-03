@@ -9,13 +9,27 @@ class ScrapeRequestDTO:
     location: str
     keywords: tuple[str, ...]
     max_results: int | None = None
+    source: str = "google_maps"
+    access_mode: str = "web"
+    api_key: str | None = None
 
     @classmethod
-    def from_values(cls, location, keywords, max_results=None):
+    def from_values(
+        cls,
+        location,
+        keywords,
+        max_results=None,
+        source="google_maps",
+        access_mode="web",
+        api_key=None,
+    ):
         return cls(
             location=location,
             keywords=tuple(keywords),
             max_results=max_results,
+            source=source,
+            access_mode=access_mode,
+            api_key=api_key,
         )
 
 
@@ -32,6 +46,7 @@ class ScrapeResultDTO:
     total_duplicates: int = 0
     total_errors: int = 0
     error_message: str | None = None
+    access_mode: str = "web"
 
 
 @dataclass(frozen=True)
@@ -73,6 +88,7 @@ class RunDTO:
     total_duplicates: int
     total_errors: int
     error_message: str | None = None
+    access_mode: str = "web"
 
 
 @dataclass(frozen=True)
