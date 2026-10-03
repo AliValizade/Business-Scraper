@@ -138,9 +138,9 @@ class MainWindow(QMainWindow):
         runs_group = QGroupBox("Run History")
         runs_layout = QVBoxLayout(runs_group)
 
-        self.runs_table = QTableWidget(0, 7)
+        self.runs_table = QTableWidget(0, 8)
         self.runs_table.setHorizontalHeaderLabels(
-            ["ID", "Source", "City", "Keyword", "Status", "Found", "Started"]
+            ["ID", "Source", "Mode", "City", "Keyword", "Status", "Found", "Started"]
         )
         self.runs_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.runs_table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -397,6 +397,7 @@ class MainWindow(QMainWindow):
                 values = (
                     run.id,
                     run.source,
+                    run.access_mode,
                     run.city,
                     run.keyword,
                     run.status,
