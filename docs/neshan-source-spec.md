@@ -301,3 +301,30 @@ Packaging does not require a source-specific code path; the same executable read
 ### Phase 5.5 — Next
 
 Desktop source selection/configuration and packaged application validation, if required after CLI/core validation.
+
+
+## Phase 5.5 — Web-first Adapter Update
+
+The neshan source remains a single independent adapter, but its default access path is now the public Neshan Web App.
+
+- Web mode: NESHAN_ACCESS_MODE=web (default)
+- API mode: NESHAN_ACCESS_MODE=api
+- NESHAN_API_KEY is required only in API mode.
+- Web mode uses the existing BrowserManager and Playwright infrastructure.
+- The normalized Business contract, Registry, Factory, Pipeline, Database and source=neshan remain unchanged.
+
+The Web flow is:
+
+query + location
+    ↓
+https://neshan.org/maps
+    ↓
+result cards
+    ↓
+business detail
+    ↓
+normalized Business
+
+A public Neshan scraper updated in May 2026 documents the same Playwright-based web flow and extracts name, category, address, phone, website, rating and reviews from Neshan's public map application. [External research: GitHub Neshan-Maps-Scraper]
+
+Phase 5.6 should perform real local Web validation and selector hardening before packaged EXE validation.
