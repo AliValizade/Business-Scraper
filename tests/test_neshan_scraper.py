@@ -24,7 +24,7 @@ def make_http_get(responses):
 def test_neshan_requires_api_key(monkeypatch):
     monkeypatch.delenv("NESHAN_API_KEY", raising=False)
 
-    scraper = NeshanScraper()
+    scraper = NeshanScraper(mode="api")
 
     with pytest.raises(ValueError, match="API key"):
         scraper.search("رستوران", "مشهد")
