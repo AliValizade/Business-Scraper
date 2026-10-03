@@ -35,6 +35,9 @@ class ScrapeService:
         keywords=None,
         max_results=None,
         location=None,
+        source="google_maps",
+        access_mode="web",
+        api_key=None,
     ):
         if isinstance(request, ScrapeRequestDTO):
             request_dto = request
@@ -45,6 +48,9 @@ class ScrapeService:
                 location=request,
                 keywords=keywords,
                 max_results=max_results,
+                source=source,
+                access_mode=access_mode,
+                api_key=api_key,
             )
 
         core_request = self.build_request(
