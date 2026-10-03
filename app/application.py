@@ -132,6 +132,7 @@ class Application:
                 key: run.get(key)
                 for key in (
                     "source",
+                    "access_mode",
                     "city",
                     "keyword",
                     "started_at",
