@@ -17,6 +17,7 @@ def test_desktop_source_supports_neshan():
 
     assert 'if source == "neshan":' in source
     assert '"api_key": os.getenv("NESHAN_API_KEY")' in source
+    assert '"mode": os.getenv("NESHAN_ACCESS_MODE", "web")' in source
 
 
 def test_desktop_passes_configured_source_to_application():
