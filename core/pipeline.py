@@ -37,6 +37,7 @@ class ScrapePipeline:
         progress_reporter=None,
         registry=None,
         source="google_maps",
+        access_mode="web",
         scraper_kwargs=None,
         factory=None,
     ):
@@ -49,6 +50,7 @@ class ScrapePipeline:
 
         self.registry = registry
         self.source = source
+        self.access_mode = access_mode
         self.scraper_kwargs = scraper_kwargs or {}
         self.factory = factory
 
@@ -105,10 +107,25 @@ class ScrapePipeline:
             keywords = (query,)
             max_results = None
 
+        run_source = request.source if request is not None else self.source
+        run_access_mode = request.access_mode if request is not None else self.access_mode
+        run_api_key = request.api_key if request is not None else None
+
+        if self.factory is not None:
+            scraper_kwargs = dict(self.scraper_kwargs)
+            scraper_kwargs["access_mode"] = run_access_mode
+            if run_api_key is not None:
+                scraper_kwargs["api_key"] = run_api_key
+            self.scraper = self.factory.create(
+                run_source,
+                **scraper_kwargs,
+            )
+
         session = self.session_factory()
 
         scrape_run = ScrapeRun(
-            source=self.source,
+            source=run_source,
+            access_mode=run_access_mode,
             city=location,
             keyword=", ".join(keywords),
             status="RUNNING",
@@ -121,7 +138,7 @@ class ScrapePipeline:
         logger.info(
             "Scrape run started | source=%s | "
             "keywords=%s | location=%s | run_id=%s",
-            self.source,
+            run_source,
             keywords,
             location,
             scrape_run.id,
@@ -542,6 +559,7 @@ class ScrapePipeline:
             run_id=scrape_run.id,
             status=scrape_run.status,
             source=scrape_run.source,
+            access_mode=scrape_run.access_mode,
             location=location,
             keywords=keywords,
             total_found=total_found,
