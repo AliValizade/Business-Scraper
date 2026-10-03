@@ -166,7 +166,7 @@ README.md
 ## Architectural principles
 
 - Keep the core source-agnostic.
-- Google Maps is the only implemented source in the current v1 scope.
+- Google Maps and Neshan are implemented sources; each source is selected independently from its Web/API access mode.
 - Future sources should be added through the scraper abstraction, registry, and factory rather than by coupling source-specific logic into the core.
 - Keep the database as the durable source of scraped business data.
 - Keep cleaning and deduplication outside source-specific extraction.
@@ -180,7 +180,7 @@ The following are intentionally outside the current v1 scope:
 - GUI
 - CRM / lead management
 - AI enrichment
-- additional scraping sources
+- additional scraping sources beyond the current Google Maps and Neshan adapters
 - cloud database
 - multi-user system
 - CAPTCHA solving or access-control circumvention
