@@ -78,11 +78,13 @@ def test_desktop_e2e_close_blocks_while_scrape_is_running():
     assert 'event.ignore()' in source
 
 
-def test_desktop_e2e_source_configuration_is_documented():
-    source = (PROJECT_ROOT / "desktop.py").read_text(encoding="utf-8")
-    readme = (PROJECT_ROOT / "installer" / "README.md").read_text(encoding="utf-8")
+def test_desktop_e2e_source_and_mode_are_gui_controls():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
 
-    assert "BUSINESS_SCRAPER_SOURCE" in source
-    assert "NESHAN_API_KEY" in source
-    assert "BUSINESS_SCRAPER_SOURCE=neshan" in readme
-    assert "NESHAN_API_KEY" in readme
+    assert "Source:" in source
+    assert "Access mode:" in source
+    assert "API key:" in source
+    assert "source=source" in source
+    assert "access_mode=access_mode" in source
