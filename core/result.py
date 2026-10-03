@@ -11,6 +11,7 @@ class ScrapeResult:
     location: str
     keywords: tuple[str, ...]
     run_id: int
+    access_mode: str = "web"
 
     total_found: int = 0
     total_new: int = 0
@@ -32,6 +33,12 @@ class ScrapeResult:
         source = self.source.strip()
         if not source:
             raise ValueError("source cannot be empty.")
+
+        if not isinstance(self.access_mode, str):
+            raise TypeError("access_mode must be a string.")
+        access_mode = self.access_mode.strip().lower()
+        if access_mode not in {"web", "api"}:
+            raise ValueError("access_mode must be 'web' or 'api'.")
 
         if not isinstance(self.location, str):
             raise TypeError("location must be a string.")
@@ -95,6 +102,7 @@ class ScrapeResult:
 
         object.__setattr__(self, "status", status)
         object.__setattr__(self, "source", source)
+        object.__setattr__(self, "access_mode", access_mode)
         object.__setattr__(self, "location", location)
         object.__setattr__(
             self,
