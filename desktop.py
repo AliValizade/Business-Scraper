@@ -34,6 +34,7 @@ def get_desktop_scraper_kwargs(source: str) -> dict:
     if source == "neshan":
         return {
             "api_key": os.getenv("NESHAN_API_KEY"),
+            "mode": os.getenv("NESHAN_ACCESS_MODE", "web"),
         }
 
     return {}
