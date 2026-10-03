@@ -631,8 +631,6 @@ def test_pipeline_can_create_scraper_from_registry():
         keywords=["پیتزا"],
         source="fake",
         access_mode="web",
-        source="fake",
-        access_mode="web",
     )
 
     result = pipeline.run(
