@@ -157,6 +157,12 @@ class ScrapeRun(Base):
         nullable=False,
     )
 
+    access_mode: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="web",
+    )
+
     city: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
@@ -223,6 +229,11 @@ class ScrapeRun(Base):
         Index(
             "ix_scrape_runs_source",
             "source",
+        ),
+        Index(
+            "ix_scrape_runs_source_access_mode",
+            "source",
+            "access_mode",
         ),
         Index(
             "ix_scrape_runs_started_at",
