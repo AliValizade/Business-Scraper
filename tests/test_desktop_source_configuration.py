@@ -40,3 +40,14 @@ def test_desktop_scrape_request_contains_source_and_access_mode():
 
     assert "source=source" in source
     assert "access_mode=access_mode" in source
+
+
+
+def test_desktop_google_maps_api_key_placeholder_is_source_aware():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    assert '"Google Maps API key"' in source
+    assert '"Neshan API key"' in source
+    assert '"API key"' in source

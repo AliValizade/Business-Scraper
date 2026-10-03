@@ -1,6 +1,10 @@
 import re
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+import json
+import os
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
+from urllib.request import Request, urlopen
 from scrapers.base import BaseScraper
 from core.states import ScraperState
 from utils.logger import get_logger
@@ -10,28 +14,219 @@ from config import RETRY_COUNT, RETRY_DELAY
 
 logger = get_logger(__name__)
 
+
+class GoogleMapsAPIError(RuntimeError):
+    """Raised when a Google Maps Places API request fails."""
+
+    def __init__(self, status_code, message):
+        self.status_code = status_code
+        super().__init__(message)
+
+
+
 class GoogleMapsScraper(BaseScraper):
     BASE_SEARCH_URL = "https://www.google.com/maps/search/"
+    PLACES_API_URL = "https://places.googleapis.com/v1/places:searchText"
+    PLACES_FIELD_MASK = ",".join(
+        (
+            "places.id",
+            "places.displayName",
+            "places.formattedAddress",
+            "places.location",
+            "places.nationalPhoneNumber",
+            "places.internationalPhoneNumber",
+            "places.websiteUri",
+            "places.rating",
+            "places.userRatingCount",
+            "places.primaryType",
+            "places.googleMapsUri",
+        )
+    )
+    API_PAGE_SIZE = 20
+    API_MAX_RESULTS = 30
 
-    def __init__(self, browser_manager, access_mode="web", api_key=None):
+    def __init__(
+        self,
+        browser_manager=None,
+        access_mode="web",
+        api_key=None,
+        http_post=None,
+        max_results=None,
+    ):
         super().__init__(browser_manager)
 
         access_mode = str(access_mode).strip().lower()
-        if access_mode != "web":
+        if access_mode not in {"web", "api"}:
+            raise ValueError("access_mode must be 'web' or 'api'.")
+
+        if access_mode == "web" and api_key is not None:
             raise ValueError(
-                "Google Maps API mode is not implemented yet."
-            )
-        if api_key is not None:
-            raise ValueError(
-                "Google Maps API key is not accepted in web mode."
+                "Google Maps API key is only accepted in API mode."
             )
 
         self.access_mode = access_mode
+        self.api_key = (
+            api_key
+            if api_key is not None
+            else os.getenv("GOOGLE_MAPS_API_KEY")
+        )
+        self.http_post = http_post or self._http_post
+        self.max_results = (
+            self.API_MAX_RESULTS
+            if max_results is None
+            else min(max_results, self.API_MAX_RESULTS)
+        )
+
+        if not isinstance(self.max_results, int):
+            raise TypeError("max_results must be an integer.")
+
+        if self.max_results <= 0:
+            raise ValueError("max_results must be greater than zero.")
 
         self.search_keyword = None
         self.search_location = None
+        self._api_businesses = []
+
+    def _require_api_key(self):
+        if not isinstance(self.api_key, str) or not self.api_key.strip():
+            raise ValueError(
+                "Google Maps API key is required in API mode. "
+                "Set GOOGLE_MAPS_API_KEY or pass api_key explicitly."
+            )
+
+    def _http_post(self, url, headers, body):
+        request = Request(
+            url,
+            headers=headers,
+            data=json.dumps(body, ensure_ascii=False).encode("utf-8"),
+            method="POST",
+        )
+
+        try:
+            with urlopen(request, timeout=30) as response:
+                return response.status, response.read().decode("utf-8")
+        except HTTPError as error:
+            try:
+                response_body = error.read().decode("utf-8")
+            except Exception:
+                response_body = ""
+            raise GoogleMapsAPIError(
+                error.code,
+                f"Google Maps Places API request failed with HTTP "
+                f"{error.code}: {response_body}",
+            ) from error
+        except URLError as error:
+            raise GoogleMapsAPIError(
+                None,
+                f"Google Maps Places API connection failed: {error.reason}",
+            ) from error
+
+    @staticmethod
+    def _map_api_place(place, query, location):
+        display_name = place.get("displayName") or {}
+        coordinates = place.get("location") or {}
+
+        return {
+            "name": display_name.get("text"),
+            "category": place.get("primaryType"),
+            "address": place.get("formattedAddress"),
+            "phone": (
+                place.get("nationalPhoneNumber")
+                or place.get("internationalPhoneNumber")
+            ),
+            "website": place.get("websiteUri"),
+            "instagram": None,
+            "rating": place.get("rating"),
+            "reviews_count": place.get("userRatingCount"),
+            "latitude": coordinates.get("latitude"),
+            "longitude": coordinates.get("longitude"),
+            "source": "google_maps",
+            "source_id": place.get("id"),
+            "source_url": place.get("googleMapsUri"),
+            "google_maps_url": place.get("googleMapsUri"),
+            "search_keyword": query,
+            "city": location,
+        }
+
+    def _search_api(self, query, location):
+        self._require_api_key()
+        self.set_state(ScraperState.SEARCHING)
+
+        search_query = f"{query} {location}".strip()
+        self.search_keyword = query
+        self.search_location = location
+        businesses = []
+        page_token = None
+
+        try:
+            while len(businesses) < self.max_results:
+                body = {
+                    "textQuery": search_query,
+                    "pageSize": min(
+                        self.API_PAGE_SIZE,
+                        self.max_results - len(businesses),
+                    ),
+                }
+                if page_token:
+                    body["pageToken"] = page_token
+
+                status_code, response_body = self.http_post(
+                    self.PLACES_API_URL,
+                    {
+                        "Content-Type": "application/json",
+                        "X-Goog-Api-Key": self.api_key,
+                        "X-Goog-FieldMask": self.PLACES_FIELD_MASK,
+                    },
+                    body,
+                )
+
+                if not 200 <= status_code < 300:
+                    raise GoogleMapsAPIError(
+                        status_code,
+                        f"Google Maps Places API returned HTTP "
+                        f"{status_code}.",
+                    )
+
+                try:
+                    response = json.loads(response_body)
+                except json.JSONDecodeError as error:
+                    raise GoogleMapsAPIError(
+                        status_code,
+                        "Google Maps Places API returned invalid JSON.",
+                    ) from error
+
+                for place in response.get("places") or []:
+                    businesses.append(
+                        self._map_api_place(
+                            place,
+                            query,
+                            location,
+                        )
+                    )
+                    if len(businesses) >= self.max_results:
+                        break
+
+                page_token = response.get("nextPageToken")
+                if not page_token:
+                    break
+
+            self._api_businesses = businesses[: self.max_results]
+            self.set_state(ScraperState.COMPLETED)
+            return self._api_businesses
+
+        except Exception:
+            self.set_state(ScraperState.FAILED)
+            logger.exception(
+                "Google Maps API search failed | query=%s | location=%s",
+                query,
+                location,
+            )
+            raise
 
     def search(self, query, location):
+        if self.access_mode == "api":
+            return self._search_api(query, location)
+
         search_query = f"{query} {location}".strip()
         encoded_query = quote_plus(search_query)
         url = f"{self.BASE_SEARCH_URL}?api=1&query={encoded_query}"
@@ -599,6 +794,9 @@ class GoogleMapsScraper(BaseScraper):
         return businesses
 
     def scrape(self):
+        if self.access_mode == "api":
+            return list(self._api_businesses)
+
         from config import (
             MAX_RESULTS,
             MAX_SCROLL_ATTEMPTS,

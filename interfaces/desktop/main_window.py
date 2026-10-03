@@ -191,7 +191,7 @@ class MainWindow(QMainWindow):
         source = self.source_combo.currentData()
         if source == "google_maps" and is_api:
             self.api_key_input.setPlaceholderText(
-                "Google Maps API key — API adapter pending"
+                "Google Maps API key"
             )
         elif source == "neshan" and is_api:
             self.api_key_input.setPlaceholderText("Neshan API key")

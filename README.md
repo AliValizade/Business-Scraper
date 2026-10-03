@@ -1,12 +1,12 @@
 # Business-Scraper
 
-A modular, database-first business scraping engine with Google Maps as the current production source.
+A modular, database-first business scraping engine with Google Maps and Neshan as the current production sources.
 
 ## Current scope
 
-Version 1 is intentionally focused on **Google Maps end-to-end**.
+The current product supports **Google Maps and Neshan** through a source + access mode architecture.
 
-The architecture is source-agnostic and prepared for future adapters, but additional sources are not part of the current implementation.
+Each implemented source can expose Web and API access independently.
 
 ## Architecture
 
@@ -21,11 +21,9 @@ ScrapePipeline
  ↓
 ScraperFactory / Registry
  ↓
-GoogleMapsScraper
+Source Adapter
  ↓
-BrowserManager
- ↓
-Google Maps
+Web / API Access
  ↓
 Cleaner
  ↓
@@ -49,7 +47,8 @@ Core layers:
 
 ## Features
 
-- Google Maps scraping with Playwright
+- Google Maps and Neshan scraping
+- Web and API access modes per source
 - Multi-keyword scraping
 - Global deduplication
 - Business cleaning and normalization
@@ -166,7 +165,7 @@ README.md
 ## Architectural principles
 
 - Keep the core source-agnostic.
-- Google Maps is the only implemented source in the current v1 scope.
+- Google Maps and Neshan are implemented sources; each source is selected independently from its Web/API access mode.
 - Future sources should be added through the scraper abstraction, registry, and factory rather than by coupling source-specific logic into the core.
 - Keep the database as the durable source of scraped business data.
 - Keep cleaning and deduplication outside source-specific extraction.
@@ -180,7 +179,7 @@ The following are intentionally outside the current v1 scope:
 - GUI
 - CRM / lead management
 - AI enrichment
-- additional scraping sources
+- additional scraping sources beyond the current Google Maps and Neshan adapters
 - cloud database
 - multi-user system
 - CAPTCHA solving or access-control circumvention

@@ -82,7 +82,7 @@ Until an API adapter is implemented for a source, the UI/adapter must not preten
 
 ## Current implementation status
 - Google Maps Web: implemented.
-- Google Maps API: planned next.
+- Google Maps API: implemented in Phase 5.6.
 - Neshan Web: implementation in Phase 5.5.
 - Neshan API: implemented as explicit API mode.
 - Desktop Source + Access Mode selection: Phase 5.5.

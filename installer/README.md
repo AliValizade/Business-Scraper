@@ -77,6 +77,6 @@ The API key field is enabled only when API mode is selected. API credentials are
 Current implementation status:
 
 - Google Maps Web: available.
-- Google Maps API: reserved for the next implementation phase.
+- Google Maps API: available when a valid Google Maps API key is supplied.
 - Neshan Web: available.
 - Neshan API: available when a valid Neshan API key is supplied.
