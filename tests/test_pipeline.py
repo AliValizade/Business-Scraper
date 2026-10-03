@@ -629,6 +629,10 @@ def test_pipeline_can_create_scraper_from_registry():
     request = ScrapeRequest(
         location="مشهد",
         keywords=["پیتزا"],
+        source="fake",
+        access_mode="web",
+        source="fake",
+        access_mode="web",
     )
 
     result = pipeline.run(
@@ -682,6 +686,10 @@ def test_pipeline_uses_registry_source():
     request = ScrapeRequest(
         location="مشهد",
         keywords=["پیتزا"],
+        source="fake",
+        access_mode="web",
+        source="fake",
+        access_mode="web",
     )
 
     result = pipeline.run(
