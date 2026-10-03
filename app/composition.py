@@ -17,6 +17,7 @@ def create_application(
     session_factory,
     browser_manager,
     source="google_maps",
+    access_mode="web",
     scraper_kwargs=None,
     license_service=None,
 ):
@@ -70,6 +71,7 @@ def create_application(
     pipeline = ScrapePipeline(
         factory=factory,
         source=source,
+        access_mode=access_mode,
         session_factory=session_factory,
         scraper_kwargs=final_scraper_kwargs,
     )
