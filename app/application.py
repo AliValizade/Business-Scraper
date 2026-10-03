@@ -68,14 +68,25 @@ class Application:
         self.license_service = license_service or LicenseService()
 
     def run(self, location, keywords, max_results=None, source="google_maps", access_mode="web", api_key=None):
-        result = self.scrape_service.start_scrape(
-            location=location,
-            keywords=keywords,
-            max_results=max_results,
-            source=source,
-            access_mode=access_mode,
-            api_key=api_key,
-        )
+        if (
+            source == "google_maps"
+            and access_mode == "web"
+            and api_key is None
+        ):
+            result = self.scrape_service.start_scrape(
+                location=location,
+                keywords=keywords,
+                max_results=max_results,
+            )
+        else:
+            result = self.scrape_service.start_scrape(
+                location=location,
+                keywords=keywords,
+                max_results=max_results,
+                source=source,
+                access_mode=access_mode,
+                api_key=api_key,
+            )
 
         if isinstance(result, ScrapeResult):
             return result
