@@ -81,6 +81,7 @@ def test_neshan_runs_through_full_application_pipeline():
         source="neshan",
         scraper_kwargs={
             "api_key": "test-key",
+            "mode": "api",
             "http_get": http_get,
         },
     )
@@ -125,6 +126,7 @@ def test_neshan_pipeline_is_source_isolated_from_google_maps():
         source="neshan",
         scraper_kwargs={
             "api_key": "test-key",
+            "mode": "api",
             "http_get": make_http_get(
                 [
                     {
