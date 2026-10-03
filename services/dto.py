@@ -37,7 +37,6 @@ class ScrapeRequestDTO:
 class ScrapeResultDTO:
     status: str
     source: str
-    access_mode: str
     location: str
     keywords: tuple[str, ...]
     run_id: int
@@ -47,6 +46,7 @@ class ScrapeResultDTO:
     total_duplicates: int = 0
     total_errors: int = 0
     error_message: str | None = None
+    access_mode: str = "web"
 
 
 @dataclass(frozen=True)
@@ -77,7 +77,6 @@ class BusinessDTO:
 class RunDTO:
     id: int
     source: str
-    access_mode: str
     city: str | None
     keyword: str | None
     started_at: datetime
@@ -89,6 +88,7 @@ class RunDTO:
     total_duplicates: int
     total_errors: int
     error_message: str | None = None
+    access_mode: str = "web"
 
 
 @dataclass(frozen=True)
