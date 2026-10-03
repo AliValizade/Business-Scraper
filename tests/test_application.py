@@ -336,6 +336,7 @@ def test_application_export_run_builds_excel_summary_metadata():
         format_name="excel",
         metadata={
             "source": "google_maps",
+            "access_mode": None,
             "city": "Mashhad",
             "keyword": "Fast Food",
             "started_at": "started",
