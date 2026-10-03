@@ -79,3 +79,6 @@ $env:NESHAN_API_KEY = "your-api-key"
 ```
 
 If `BUSINESS_SCRAPER_SOURCE` is omitted, Google Maps remains the default. The API key is never stored in the repository or embedded in the executable.
+
+
+Neshan desktop access is Web-first. `NESHAN_ACCESS_MODE=web` is the default and does not require an API key. The optional official API path can be selected with `NESHAN_ACCESS_MODE=api` and requires `NESHAN_API_KEY`.
