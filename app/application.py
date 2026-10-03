@@ -80,6 +80,7 @@ class Application:
         return ScrapeResult(
             status=result.status,
             source=result.source,
+            access_mode=result.access_mode,
             location=result.location,
             keywords=result.keywords,
             run_id=result.run_id,
