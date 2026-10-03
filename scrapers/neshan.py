@@ -579,6 +579,10 @@ class NeshanScraper(BaseScraper):
 
         return None
 
+    def _map_business(self, item, details=None):
+        """Backward-compatible alias for the normalized API mapper."""
+        return self._map_api_business(item, details=details)
+
     def _map_api_business(self, item, details=None):
         details = details or {}
         search_location = item.get("location") or {}
