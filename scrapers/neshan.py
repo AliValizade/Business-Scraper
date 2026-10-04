@@ -296,38 +296,61 @@ class NeshanScraper(BaseScraper):
         if input_locator is None:
             diagnostics = []
             try:
-                for index in range(min(page.locator("input").count(), 20)):
-                    locator = page.locator("input").nth(index)
-                    diagnostics.append(
-                        {
-                            "type": "input",
-                            "placeholder": locator.get_attribute("placeholder"),
-                            "aria_label": locator.get_attribute("aria-label"),
-                            "name": locator.get_attribute("name"),
-                            "type_attr": locator.get_attribute("type"),
-                            "class": locator.get_attribute("class"),
-                        }
-                    )
-                for index in range(min(page.locator("textarea").count(), 10)):
-                    locator = page.locator("textarea").nth(index)
-                    diagnostics.append(
-                        {
-                            "type": "textarea",
-                            "placeholder": locator.get_attribute("placeholder"),
-                            "aria_label": locator.get_attribute("aria-label"),
-                            "name": locator.get_attribute("name"),
-                            "class": locator.get_attribute("class"),
-                        }
-                    )
+                for selector in (
+                    "input",
+                    "textarea",
+                    "[contenteditable='true']",
+                    "[role='textbox']",
+                    "button",
+                    "iframe",
+                ):
+                    locator = page.locator(selector)
+                    for index in range(min(locator.count(), 30)):
+                        item = locator.nth(index)
+                        diagnostics.append(
+                            {
+                                "selector": selector,
+                                "tag": item.evaluate(
+                                    "(element) => element.tagName"
+                                ),
+                                "text": (
+                                    item.inner_text(timeout=500)
+                                    if selector != "iframe"
+                                    else None
+                                ),
+                                "placeholder": item.get_attribute(
+                                    "placeholder"
+                                ),
+                                "aria_label": item.get_attribute(
+                                    "aria-label"
+                                ),
+                                "aria_role": item.get_attribute("role"),
+                                "name": item.get_attribute("name"),
+                                "type_attr": item.get_attribute("type"),
+                                "title_attr": item.get_attribute("title"),
+                                "class": item.get_attribute("class"),
+                                "id": item.get_attribute("id"),
+                            }
+                        )
+
+                shadow_summary = page.locator(
+                    "body *"
+                ).evaluate_all(
+                    "(elements) => elements.flatMap((e) => "
+                    "e.shadowRoot ? [{tag:e.tagName,id:e.id,class:e.className,"
+                    "shadowText:e.shadowRoot.innerText?.slice(0,500)}] : [])"
+                )
             except Exception:
+                shadow_summary = []
                 logger.exception("Neshan web DOM diagnostic failed.")
 
             logger.error(
                 "Neshan search input was not found | url=%s | title=%s | "
-                "inputs=%s",
+                "elements=%s | shadow_roots=%s",
                 page.url,
                 page.title(),
                 diagnostics,
+                shadow_summary,
             )
             raise RuntimeError(
                 "Neshan search input was not found."
