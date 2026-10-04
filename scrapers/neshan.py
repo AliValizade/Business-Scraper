@@ -414,12 +414,70 @@ class NeshanScraper(BaseScraper):
             except Exception:
                 logger.exception("Neshan web DOM JavaScript diagnostic failed.")
 
+            top_region = []
+            try:
+                top_region = page.locator("body").evaluate(
+                    """
+                    () => [...document.querySelectorAll("*")]
+                        .map((el) => {
+                            const rect = el.getBoundingClientRect();
+                            return {
+                                el,
+                                rect,
+                                tag: el.tagName,
+                                text: (el.textContent || "")
+                                    .replace(/\\s+/g, " ")
+                                    .trim(),
+                                id: el.id || null,
+                                className: typeof el.className === "string"
+                                    ? el.className
+                                    : null,
+                                role: el.getAttribute("role"),
+                                ariaLabel: el.getAttribute("aria-label"),
+                                title: el.getAttribute("title"),
+                            };
+                        })
+                        .filter(({rect}) =>
+                            rect.width > 80 &&
+                            rect.height > 20 &&
+                            rect.top >= 90 &&
+                            rect.top <= 190 &&
+                            rect.left >= 600 &&
+                            rect.left <= window.innerWidth
+                        )
+                        .sort((a, b) =>
+                            (a.rect.width * a.rect.height) -
+                            (b.rect.width * b.rect.height)
+                        )
+                        .slice(0, 40)
+                        .map(({rect, tag, text, id, className, role,
+                              ariaLabel, title}) => ({
+                            rect: {
+                                x: Math.round(rect.x),
+                                y: Math.round(rect.y),
+                                width: Math.round(rect.width),
+                                height: Math.round(rect.height),
+                            },
+                            tag,
+                            text: text.slice(0, 120),
+                            id,
+                            className,
+                            role,
+                            ariaLabel,
+                            title,
+                        }))
+                    """
+                )
+            except Exception:
+                logger.exception("Neshan top-region diagnostic failed.")
+
             logger.error(
                 "Neshan search input was not found | url=%s | title=%s | "
-                "dom_diagnostics=%s",
+                "dom_diagnostics=%s | top_region=%s",
                 page.url,
                 page.title(),
                 dom_diagnostics,
+                top_region,
             )
             raise RuntimeError(
                 "Neshan search input was not found."
