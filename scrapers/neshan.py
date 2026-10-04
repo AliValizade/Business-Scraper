@@ -294,6 +294,41 @@ class NeshanScraper(BaseScraper):
             self.SEARCH_INPUT_SELECTORS,
         )
         if input_locator is None:
+            diagnostics = []
+            try:
+                for index in range(min(page.locator("input").count(), 20)):
+                    locator = page.locator("input").nth(index)
+                    diagnostics.append(
+                        {
+                            "type": "input",
+                            "placeholder": locator.get_attribute("placeholder"),
+                            "aria_label": locator.get_attribute("aria-label"),
+                            "name": locator.get_attribute("name"),
+                            "type_attr": locator.get_attribute("type"),
+                            "class": locator.get_attribute("class"),
+                        }
+                    )
+                for index in range(min(page.locator("textarea").count(), 10)):
+                    locator = page.locator("textarea").nth(index)
+                    diagnostics.append(
+                        {
+                            "type": "textarea",
+                            "placeholder": locator.get_attribute("placeholder"),
+                            "aria_label": locator.get_attribute("aria-label"),
+                            "name": locator.get_attribute("name"),
+                            "class": locator.get_attribute("class"),
+                        }
+                    )
+            except Exception:
+                logger.exception("Neshan web DOM diagnostic failed.")
+
+            logger.error(
+                "Neshan search input was not found | url=%s | title=%s | "
+                "inputs=%s",
+                page.url,
+                page.title(),
+                diagnostics,
+            )
             raise RuntimeError(
                 "Neshan search input was not found."
             )
