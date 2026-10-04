@@ -344,13 +344,33 @@ class NeshanScraper(BaseScraper):
                 shadow_summary = []
                 logger.exception("Neshan web DOM diagnostic failed.")
 
+            search_ui = page.get_by_text("جستجو در نشان", exact=False)
+            search_ui_details = []
+            try:
+                for index in range(min(search_ui.count(), 10)):
+                    item = search_ui.nth(index)
+                    search_ui_details.append(
+                        {
+                            "tag": item.evaluate("(element) => element.tagName"),
+                            "text": item.inner_text(timeout=500),
+                            "class": item.get_attribute("class"),
+                            "id": item.get_attribute("id"),
+                            "role": item.get_attribute("role"),
+                            "aria_label": item.get_attribute("aria-label"),
+                            "title": item.get_attribute("title"),
+                        }
+                    )
+            except Exception:
+                logger.exception("Neshan search UI diagnostic failed.")
+
             logger.error(
                 "Neshan search input was not found | url=%s | title=%s | "
-                "elements=%s | shadow_roots=%s",
+                "elements=%s | shadow_roots=%s | search_ui=%s",
                 page.url,
                 page.title(),
                 diagnostics,
                 shadow_summary,
+                search_ui_details,
             )
             raise RuntimeError(
                 "Neshan search input was not found."
