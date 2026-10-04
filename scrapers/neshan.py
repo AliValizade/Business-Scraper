@@ -344,33 +344,82 @@ class NeshanScraper(BaseScraper):
                 shadow_summary = []
                 logger.exception("Neshan web DOM diagnostic failed.")
 
-            search_ui = page.get_by_text("جستجو در نشان", exact=False)
-            search_ui_details = []
+            dom_diagnostics = {}
             try:
-                for index in range(min(search_ui.count(), 10)):
-                    item = search_ui.nth(index)
-                    search_ui_details.append(
-                        {
-                            "tag": item.evaluate("(element) => element.tagName"),
-                            "text": item.inner_text(timeout=500),
-                            "class": item.get_attribute("class"),
-                            "id": item.get_attribute("id"),
-                            "role": item.get_attribute("role"),
-                            "aria_label": item.get_attribute("aria-label"),
-                            "title": item.get_attribute("title"),
-                        }
-                    )
+                dom_diagnostics = page.locator("body").evaluate(
+                    """
+                    (body) => {
+                        const nodes = [...body.querySelectorAll("*")];
+                        const normalize = (value) => (value || "")
+                            .replace(/\\s+/g, " ")
+                            .trim();
+
+                        const textMatches = nodes
+                            .filter((el) => {
+                                const text = normalize(el.textContent);
+                                return text.includes("جستجو") || text.includes("جستجو در نشان");
+                            })
+                            .slice(0, 30)
+                            .map((el) => ({
+                                tag: el.tagName,
+                                text: normalize(el.textContent).slice(0, 200),
+                                id: el.id || null,
+                                className: typeof el.className === "string"
+                                    ? el.className
+                                    : null,
+                                role: el.getAttribute("role"),
+                                ariaLabel: el.getAttribute("aria-label"),
+                                title: el.getAttribute("title"),
+                                outerHTML: el.outerHTML.slice(0, 1000),
+                            }));
+
+                        const interactive = nodes
+                            .filter((el) => {
+                                const role = el.getAttribute("role");
+                                const aria = el.getAttribute("aria-label");
+                                const title = el.getAttribute("title");
+                                return role === "textbox"
+                                    || role === "button"
+                                    || aria
+                                    || title
+                                    || el.tagName === "BUTTON";
+                            })
+                            .slice(0, 100)
+                            .map((el) => ({
+                                tag: el.tagName,
+                                text: normalize(el.textContent).slice(0, 120),
+                                id: el.id || null,
+                                className: typeof el.className === "string"
+                                    ? el.className
+                                    : null,
+                                role: el.getAttribute("role"),
+                                ariaLabel: el.getAttribute("aria-label"),
+                                title: el.getAttribute("title"),
+                            }));
+
+                        return {
+                            textMatches,
+                            interactive,
+                            iframes: [...document.querySelectorAll("iframe")].map(
+                                (el) => ({
+                                    src: el.getAttribute("src"),
+                                    title: el.getAttribute("title"),
+                                    name: el.getAttribute("name"),
+                                })
+                            ),
+                        };
+                    }
+                    """
+                )
             except Exception:
-                logger.exception("Neshan search UI diagnostic failed.")
+                logger.exception("Neshan web DOM JavaScript diagnostic failed.")
 
             logger.error(
                 "Neshan search input was not found | url=%s | title=%s | "
-                "elements=%s | shadow_roots=%s | search_ui=%s",
+                "dom_diagnostics=%s",
                 page.url,
                 page.title(),
-                diagnostics,
-                shadow_summary,
-                search_ui_details,
+                dom_diagnostics,
             )
             raise RuntimeError(
                 "Neshan search input was not found."
