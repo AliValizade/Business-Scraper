@@ -298,13 +298,48 @@ class NeshanScraper(BaseScraper):
 
     def _fill_web_search(self, value):
         page = self._require_page()
-        input_locator = self._first_visible(
-            page,
-            self.SEARCH_INPUT_SELECTORS,
-        )
+
+        input_locator = None
+        for selector in self.SEARCH_INPUT_SELECTORS:
+            candidate = page.locator(selector).first
+            try:
+                candidate.wait_for(
+                    state="visible",
+                    timeout=15000,
+                )
+            except PlaywrightTimeoutError:
+                continue
+
+            # Neshan initially exposes a readonly search shell. Clicking it
+            # opens/enables the real search control.
+            try:
+                readonly = candidate.get_attribute("readonly")
+            except Exception:
+                readonly = None
+
+            if readonly is not None:
+                try:
+                    candidate.click()
+                    candidate.wait_for(
+                        state="visible",
+                        timeout=5000,
+                    )
+                except Exception:
+                    continue
+
+            input_locator = candidate
+            break
+
         if input_locator is None:
             raise RuntimeError("Neshan search input was not found.")
-        input_locator.fill(value)
+
+        try:
+            input_locator.fill(value, timeout=5000)
+        except Exception as error:
+            raise RuntimeError(
+                "Neshan search input was not editable."
+            ) from error
+
         input_locator.press("Enter")
 
     def _wait_web_results(self):
