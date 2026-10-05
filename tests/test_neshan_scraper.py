@@ -260,7 +260,36 @@ def test_neshan_api_mode_requires_key(monkeypatch):
         scraper.search("رستوران", "مشهد")
 
 
-def test_neshan_web_mode_combines_query_and_location():
+def test_neshan_web_resolves_location_before_keyword_search():
+    class FakeHeading:
+        def __init__(self, card):
+            self.card = card
+
+        def count(self):
+            return 1
+
+        def click(self, **_kwargs):
+            self.card.page.url = (
+                "https://neshan.org/maps/places/city"
+                "#c38.080-46.290-12z-0p"
+            )
+
+    class FakeCard:
+        def __init__(self, page, text):
+            self.page = page
+            self.text = text
+
+        def inner_text(self, **_kwargs):
+            return self.text
+
+        def scroll_into_view_if_needed(self):
+            return None
+
+        def locator(self, selector):
+            if selector == "h2":
+                return FakeHeading(self)
+            return FakeLocator()
+
     class FakeLocator:
         def __init__(self):
             self.filled = None
@@ -282,67 +311,46 @@ def test_neshan_web_mode_combines_query_and_location():
         def press(self, value):
             self.pressed = value
 
+    class FakeResults(FakeLocator):
+        def __init__(self, page):
+            super().__init__()
+            self.page = page
+            self.cards = [FakeCard(page, "تبریز، آذربایجان شرقی")]
+
+        def count(self):
+            return len(self.cards)
+
+        def nth(self, index):
+            return self.cards[index]
+
     class FakePage:
         def __init__(self):
             self.url = ""
             self.input = FakeLocator()
-            self.results = FakeLocator()
+            self.results = FakeResults(self)
+            self.goto_calls = []
 
         def goto(self, url, **_kwargs):
+            self.goto_calls.append(url)
             self.url = url
 
         def locator(self, selector):
-            if selector == "input.AZLBjuP":
+            if selector in (
+                "input.AZLBjuP",
+                'input[placeholder*="جستجو"]',
+                'input[type="search"]',
+            ):
                 return self.input
             return self.results
 
-    class FakeBrowser:
-        def __init__(self):
-            self.page = FakePage()
-
-    scraper = NeshanScraper(
-        browser_manager=FakeBrowser(),
-        mode="web",
-    )
-
-    scraper.search("فست فود", "مشهد")
-
-    assert scraper.page.url == "https://neshan.org/maps/search"
-    assert scraper.page.input.filled == "فست فود مشهد"
-    assert scraper.page.input.pressed == "Enter"
-    assert scraper.state is ScraperState.LOADING
-
-def test_neshan_web_waits_for_client_rendered_search_input():
-    class DelayedLocator:
-        @property
-        def first(self):
-            return self
-
-        def count(self):
-            return 0
-
-        def wait_for(self, **_kwargs):
+        def wait_for_timeout(self, _timeout):
             return None
 
-        def fill(self, value):
-            self.filled = value
+        def go_back(self, **_kwargs):
+            self.url = "https://neshan.org/maps"
 
-        def press(self, value):
-            self.pressed = value
-
-    class FakePage:
-        def __init__(self):
-            self.url = ""
-            self.input = DelayedLocator()
-            self.results = DelayedLocator()
-
-        def goto(self, url, **_kwargs):
-            self.url = url
-
-        def locator(self, selector):
-            if selector == "input.AZLBjuP":
-                return self.input
-            return self.results
+        def mouse(self):
+            return None
 
     class FakeBrowser:
         def __init__(self):
@@ -355,6 +363,17 @@ def test_neshan_web_waits_for_client_rendered_search_input():
 
     scraper.search("فست فود", "تبریز")
 
-    assert scraper.page.input.filled == "فست فود تبریز"
+    assert scraper.page.url == (
+        "https://neshan.org/maps#c38.080000-46.290000-12z-0p"
+    )
+    assert scraper.page.input.filled == "فست فود"
     assert scraper.page.input.pressed == "Enter"
     assert scraper.state is ScraperState.LOADING
+
+
+def test_neshan_web_location_resolution_is_dynamic():
+    scraper = NeshanScraper(mode="web")
+    assert scraper._extract_map_center(
+        "https://neshan.org/maps#c35.689-51.389-11z-0p"
+    ) == (35.689, 51.389)
+
