@@ -359,7 +359,7 @@ def test_neshan_web_resolves_location_before_keyword_search():
         def wait_for(self, **_kwargs):
             return None
 
-        def fill(self, value):
+        def fill(self, value, **_kwargs):
             self.filled = value
 
         def press(self, value):
