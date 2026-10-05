@@ -327,7 +327,7 @@ class NeshanScraper(BaseScraper):
             return None, None
 
         match = re.search(
-            r"#c(-?\\d+(?:\\.\\d+)?)-(-?\\d+(?:\\.\\d+)?)-",
+            r"#c(-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)-",
             url,
         )
         if not match:
