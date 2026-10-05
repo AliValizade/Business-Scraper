@@ -260,6 +260,60 @@ def test_neshan_api_mode_requires_key(monkeypatch):
         scraper.search("رستوران", "مشهد")
 
 
+def test_neshan_web_search_clicks_readonly_shell():
+    class FakeLocator:
+        def __init__(self):
+            self.filled = None
+            self.pressed = None
+            self.clicked = False
+            self.readonly = "readonly"
+
+        @property
+        def first(self):
+            return self
+
+        def wait_for(self, **_kwargs):
+            return None
+
+        def get_attribute(self, name):
+            if name == "readonly":
+                return self.readonly
+            return None
+
+        def click(self, **_kwargs):
+            self.clicked = True
+            self.readonly = None
+
+        def fill(self, value, **_kwargs):
+            assert self.readonly is None
+            self.filled = value
+
+        def press(self, value):
+            self.pressed = value
+
+    class FakePage:
+        def __init__(self):
+            self.input = FakeLocator()
+
+        def locator(self, _selector):
+            return self.input
+
+    class FakeBrowser:
+        def __init__(self):
+            self.page = FakePage()
+
+    scraper = NeshanScraper(
+        browser_manager=FakeBrowser(),
+        mode="web",
+    )
+
+    scraper._fill_web_search("تبریز")
+
+    assert scraper.page.input.clicked is True
+    assert scraper.page.input.filled == "تبریز"
+    assert scraper.page.input.pressed == "Enter"
+
+
 def test_neshan_web_resolves_location_before_keyword_search():
     class FakeHeading:
         def __init__(self, card):
