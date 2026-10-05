@@ -32,7 +32,7 @@ class NeshanScraper(BaseScraper):
     """
 
     BASE_URL = "https://api.neshan.org"
-    WEB_URL = "https://neshan.org/maps"
+    WEB_URL = "https://neshan.org/maps/search"
     SEARCH_PATH = "/v3/search"
     GEOCODING_PATH = "/geocoding/v1"
     POI_DETAILS_PATH = "/v1/point"
@@ -265,43 +265,85 @@ class NeshanScraper(BaseScraper):
 
     @staticmethod
     def _first_visible(page, selectors):
+        """Return the first selector that becomes visible.
+
+        Neshan is a client-rendered SPA, so an element may not exist yet
+        immediately after domcontentloaded. Waiting on the locator itself
+        is therefore more reliable than checking count() first.
+        """
         for selector in selectors:
             locator = page.locator(selector).first
-            if locator.count() > 0:
-                try:
-                    locator.wait_for(state="visible", timeout=3000)
-                    return locator
-                except PlaywrightTimeoutError:
-                    continue
+            try:
+                locator.wait_for(
+                    state="visible",
+                    timeout=15000,
+                )
+                return locator
+            except PlaywrightTimeoutError:
+                continue
         return None
 
-    def _search_web(self, query, location):
+    def _open_web_map(self):
         page = self._require_page()
-        search_query = f"{query} {location}".strip()
-
         retry(
             lambda: page.goto(
-                self.WEB_URL,
+                "https://neshan.org/maps",
                 wait_until="domcontentloaded",
             ),
             retries=RETRY_COUNT,
             delay=RETRY_DELAY,
             exceptions=(TimeoutError, PlaywrightTimeoutError),
         )
+        return page
 
-        input_locator = self._first_visible(
-            page,
-            self.SEARCH_INPUT_SELECTORS,
-        )
+    def _fill_web_search(self, value):
+        page = self._require_page()
+
+        input_locator = None
+        for selector in self.SEARCH_INPUT_SELECTORS:
+            candidate = page.locator(selector).first
+            try:
+                candidate.wait_for(
+                    state="visible",
+                    timeout=15000,
+                )
+            except PlaywrightTimeoutError:
+                continue
+
+            # Neshan initially exposes a readonly search shell. Clicking it
+            # opens/enables the real search control.
+            try:
+                readonly = candidate.get_attribute("readonly")
+            except Exception:
+                readonly = None
+
+            if readonly is not None:
+                try:
+                    candidate.click()
+                    candidate.wait_for(
+                        state="visible",
+                        timeout=5000,
+                    )
+                except Exception:
+                    continue
+
+            input_locator = candidate
+            break
+
         if input_locator is None:
-            raise RuntimeError(
-                "Neshan search input was not found."
-            )
+            raise RuntimeError("Neshan search input was not found.")
 
-        input_locator.fill(search_query)
+        try:
+            input_locator.fill(value, timeout=5000)
+        except Exception as error:
+            raise RuntimeError(
+                "Neshan search input was not editable."
+            ) from error
+
         input_locator.press("Enter")
 
-        results = None
+    def _wait_web_results(self):
+        page = self._require_page()
         for selector in self.RESULT_SELECTORS:
             candidate = page.locator(selector)
             try:
@@ -309,17 +351,109 @@ class NeshanScraper(BaseScraper):
                     state="visible",
                     timeout=20000,
                 )
-                results = candidate
-                break
+                return candidate
             except PlaywrightTimeoutError:
                 continue
+        raise RuntimeError("Neshan search results were not loaded.")
 
-        if results is None:
+    @staticmethod
+    def _extract_map_center(url):
+        if not url:
+            return None, None
+
+        match = re.search(
+            r"#c(-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)-",
+            url,
+        )
+        if not match:
+            return None, None
+
+        try:
+            return float(match.group(1)), float(match.group(2))
+        except ValueError:
+            return None, None
+
+    def _resolve_web_location(self, location):
+        """Resolve the requested location through Neshan Web itself.
+
+        The resolved map center is then reused for the actual keyword search,
+        avoiding a hard-coded city-coordinate table.
+        """
+        page = self._open_web_map()
+        self._fill_web_search(str(location).strip())
+        results = self._wait_web_results()
+
+        location_text = str(location).strip()
+        candidates = []
+        count = min(results.count(), 20)
+
+        for index in range(count):
+            card = results.nth(index)
+            try:
+                text = card.inner_text(timeout=1000).strip()
+            except Exception:
+                continue
+
+            if location_text and location_text in text:
+                candidates.insert(0, card)
+            else:
+                candidates.append(card)
+
+        if not candidates:
             raise RuntimeError(
-                "Neshan search results were not loaded."
+                f"Neshan could not resolve location '{location}'."
             )
 
-        return results
+        resolved = False
+        for card in candidates:
+            try:
+                card.scroll_into_view_if_needed()
+                heading = card.locator("h2").first
+                if heading.count() == 0:
+                    continue
+
+                heading.click(force=True)
+                page.wait_for_timeout(800)
+
+                latitude, longitude = self._extract_map_center(page.url)
+                if latitude is None or longitude is None:
+                    page.go_back(wait_until="domcontentloaded")
+                    continue
+
+                resolved = True
+                break
+            except Exception:
+                try:
+                    page.go_back(wait_until="domcontentloaded")
+                except Exception:
+                    pass
+
+        if not resolved:
+            raise RuntimeError(
+                f"Neshan could not resolve location '{location}'."
+            )
+
+        # Re-enter the public map route while preserving the dynamically
+        # resolved center. The center came from Neshan, not from our code.
+        page.goto(
+            f"https://neshan.org/maps#c{latitude:.6f}-{longitude:.6f}-12z-0p",
+            wait_until="domcontentloaded",
+        )
+        self._first_visible(
+            page,
+            self.SEARCH_INPUT_SELECTORS,
+        )
+        return latitude, longitude
+
+    def _search_web(self, query, location):
+        page = self._require_page()
+        self._resolve_web_location(location)
+
+        search_query = str(query).strip()
+        self._fill_web_search(search_query)
+
+        return self._wait_web_results()
+
 
     @staticmethod
     def _extract_source_id(url):

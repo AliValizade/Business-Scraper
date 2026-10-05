@@ -5,3 +5,8 @@ env/
 .pytest_cache/
 Business-Scraper_Technical_Design_Roadmap_v1.1.md
 *.cache
+*.exe
+# PyInstaller build artifacts
+build/
+dist/
+*.spec.bak
