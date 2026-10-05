@@ -283,218 +283,32 @@ class NeshanScraper(BaseScraper):
                 continue
         return None
 
-    def _search_web(self, query, location):
+    def _open_web_map(self):
         page = self._require_page()
-        search_query = f"{query} {location}".strip()
-
         retry(
             lambda: page.goto(
-                self.WEB_URL,
+                "https://neshan.org/maps",
                 wait_until="domcontentloaded",
             ),
             retries=RETRY_COUNT,
             delay=RETRY_DELAY,
             exceptions=(TimeoutError, PlaywrightTimeoutError),
         )
+        return page
 
+    def _fill_web_search(self, value):
+        page = self._require_page()
         input_locator = self._first_visible(
             page,
             self.SEARCH_INPUT_SELECTORS,
         )
         if input_locator is None:
-            diagnostics = []
-            try:
-                for selector in (
-                    "input",
-                    "textarea",
-                    "[contenteditable='true']",
-                    "[role='textbox']",
-                    "button",
-                    "iframe",
-                ):
-                    locator = page.locator(selector)
-                    for index in range(min(locator.count(), 30)):
-                        item = locator.nth(index)
-                        diagnostics.append(
-                            {
-                                "selector": selector,
-                                "tag": item.evaluate(
-                                    "(element) => element.tagName"
-                                ),
-                                "text": (
-                                    item.inner_text(timeout=500)
-                                    if selector != "iframe"
-                                    else None
-                                ),
-                                "placeholder": item.get_attribute(
-                                    "placeholder"
-                                ),
-                                "aria_label": item.get_attribute(
-                                    "aria-label"
-                                ),
-                                "aria_role": item.get_attribute("role"),
-                                "name": item.get_attribute("name"),
-                                "type_attr": item.get_attribute("type"),
-                                "title_attr": item.get_attribute("title"),
-                                "class": item.get_attribute("class"),
-                                "id": item.get_attribute("id"),
-                            }
-                        )
-
-                shadow_summary = page.locator(
-                    "body *"
-                ).evaluate_all(
-                    "(elements) => elements.flatMap((e) => "
-                    "e.shadowRoot ? [{tag:e.tagName,id:e.id,class:e.className,"
-                    "shadowText:e.shadowRoot.innerText?.slice(0,500)}] : [])"
-                )
-            except Exception:
-                shadow_summary = []
-                logger.exception("Neshan web DOM diagnostic failed.")
-
-            dom_diagnostics = {}
-            try:
-                dom_diagnostics = page.locator("body").evaluate(
-                    """
-                    (body) => {
-                        const nodes = [...body.querySelectorAll("*")];
-                        const normalize = (value) => (value || "")
-                            .replace(/\\s+/g, " ")
-                            .trim();
-
-                        const textMatches = nodes
-                            .filter((el) => {
-                                const text = normalize(el.textContent);
-                                return text.includes("جستجو") || text.includes("جستجو در نشان");
-                            })
-                            .slice(0, 30)
-                            .map((el) => ({
-                                tag: el.tagName,
-                                text: normalize(el.textContent).slice(0, 200),
-                                id: el.id || null,
-                                className: typeof el.className === "string"
-                                    ? el.className
-                                    : null,
-                                role: el.getAttribute("role"),
-                                ariaLabel: el.getAttribute("aria-label"),
-                                title: el.getAttribute("title"),
-                                outerHTML: el.outerHTML.slice(0, 1000),
-                            }));
-
-                        const interactive = nodes
-                            .filter((el) => {
-                                const role = el.getAttribute("role");
-                                const aria = el.getAttribute("aria-label");
-                                const title = el.getAttribute("title");
-                                return role === "textbox"
-                                    || role === "button"
-                                    || aria
-                                    || title
-                                    || el.tagName === "BUTTON";
-                            })
-                            .slice(0, 100)
-                            .map((el) => ({
-                                tag: el.tagName,
-                                text: normalize(el.textContent).slice(0, 120),
-                                id: el.id || null,
-                                className: typeof el.className === "string"
-                                    ? el.className
-                                    : null,
-                                role: el.getAttribute("role"),
-                                ariaLabel: el.getAttribute("aria-label"),
-                                title: el.getAttribute("title"),
-                            }));
-
-                        return {
-                            textMatches,
-                            interactive,
-                            iframes: [...document.querySelectorAll("iframe")].map(
-                                (el) => ({
-                                    src: el.getAttribute("src"),
-                                    title: el.getAttribute("title"),
-                                    name: el.getAttribute("name"),
-                                })
-                            ),
-                        };
-                    }
-                    """
-                )
-            except Exception:
-                logger.exception("Neshan web DOM JavaScript diagnostic failed.")
-
-            top_region = []
-            try:
-                top_region = page.locator("body").evaluate(
-                    """
-                    () => [...document.querySelectorAll("*")]
-                        .map((el) => {
-                            const rect = el.getBoundingClientRect();
-                            return {
-                                el,
-                                rect,
-                                tag: el.tagName,
-                                text: (el.textContent || "")
-                                    .replace(/\\s+/g, " ")
-                                    .trim(),
-                                id: el.id || null,
-                                className: typeof el.className === "string"
-                                    ? el.className
-                                    : null,
-                                role: el.getAttribute("role"),
-                                ariaLabel: el.getAttribute("aria-label"),
-                                title: el.getAttribute("title"),
-                            };
-                        })
-                        .filter(({rect}) =>
-                            rect.width > 80 &&
-                            rect.height > 20 &&
-                            rect.top >= 90 &&
-                            rect.top <= 190 &&
-                            rect.left >= 600 &&
-                            rect.left <= window.innerWidth
-                        )
-                        .sort((a, b) =>
-                            (a.rect.width * a.rect.height) -
-                            (b.rect.width * b.rect.height)
-                        )
-                        .slice(0, 40)
-                        .map(({rect, tag, text, id, className, role,
-                              ariaLabel, title}) => ({
-                            rect: {
-                                x: Math.round(rect.x),
-                                y: Math.round(rect.y),
-                                width: Math.round(rect.width),
-                                height: Math.round(rect.height),
-                            },
-                            tag,
-                            text: text.slice(0, 120),
-                            id,
-                            className,
-                            role,
-                            ariaLabel,
-                            title,
-                        }))
-                    """
-                )
-            except Exception:
-                logger.exception("Neshan top-region diagnostic failed.")
-
-            logger.error(
-                "Neshan search input was not found | url=%s | title=%s | "
-                "dom_diagnostics=%s | top_region=%s",
-                page.url,
-                page.title(),
-                dom_diagnostics,
-                top_region,
-            )
-            raise RuntimeError(
-                "Neshan search input was not found."
-            )
-
-        input_locator.fill(search_query)
+            raise RuntimeError("Neshan search input was not found.")
+        input_locator.fill(value)
         input_locator.press("Enter")
 
-        results = None
+    def _wait_web_results(self):
+        page = self._require_page()
         for selector in self.RESULT_SELECTORS:
             candidate = page.locator(selector)
             try:
@@ -502,17 +316,109 @@ class NeshanScraper(BaseScraper):
                     state="visible",
                     timeout=20000,
                 )
-                results = candidate
-                break
+                return candidate
             except PlaywrightTimeoutError:
                 continue
+        raise RuntimeError("Neshan search results were not loaded.")
 
-        if results is None:
+    @staticmethod
+    def _extract_map_center(url):
+        if not url:
+            return None, None
+
+        match = re.search(
+            r"#c(-?\\d+(?:\\.\\d+)?)-(-?\\d+(?:\\.\\d+)?)-",
+            url,
+        )
+        if not match:
+            return None, None
+
+        try:
+            return float(match.group(1)), float(match.group(2))
+        except ValueError:
+            return None, None
+
+    def _resolve_web_location(self, location):
+        """Resolve the requested location through Neshan Web itself.
+
+        The resolved map center is then reused for the actual keyword search,
+        avoiding a hard-coded city-coordinate table.
+        """
+        page = self._open_web_map()
+        self._fill_web_search(str(location).strip())
+        results = self._wait_web_results()
+
+        location_text = str(location).strip()
+        candidates = []
+        count = min(results.count(), 20)
+
+        for index in range(count):
+            card = results.nth(index)
+            try:
+                text = card.inner_text(timeout=1000).strip()
+            except Exception:
+                continue
+
+            if location_text and location_text in text:
+                candidates.insert(0, card)
+            else:
+                candidates.append(card)
+
+        if not candidates:
             raise RuntimeError(
-                "Neshan search results were not loaded."
+                f"Neshan could not resolve location '{location}'."
             )
 
-        return results
+        resolved = False
+        for card in candidates:
+            try:
+                card.scroll_into_view_if_needed()
+                heading = card.locator("h2").first
+                if heading.count() == 0:
+                    continue
+
+                heading.click(force=True)
+                page.wait_for_timeout(800)
+
+                latitude, longitude = self._extract_map_center(page.url)
+                if latitude is None or longitude is None:
+                    page.go_back(wait_until="domcontentloaded")
+                    continue
+
+                resolved = True
+                break
+            except Exception:
+                try:
+                    page.go_back(wait_until="domcontentloaded")
+                except Exception:
+                    pass
+
+        if not resolved:
+            raise RuntimeError(
+                f"Neshan could not resolve location '{location}'."
+            )
+
+        # Re-enter the public map route while preserving the dynamically
+        # resolved center. The center came from Neshan, not from our code.
+        page.goto(
+            f"https://neshan.org/maps#c{latitude:.6f}-{longitude:.6f}-12z-0p",
+            wait_until="domcontentloaded",
+        )
+        self._first_visible(
+            page,
+            self.SEARCH_INPUT_SELECTORS,
+        )
+        return latitude, longitude
+
+    def _search_web(self, query, location):
+        page = self._require_page()
+        self._resolve_web_location(location)
+
+        search_query = str(query).strip()
+        self._fill_web_search(search_query)
+
+        return self._wait_web_results()
+
 
     @staticmethod
     def _extract_source_id(url):
