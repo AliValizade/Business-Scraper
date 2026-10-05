@@ -319,6 +319,10 @@ def test_neshan_web_resolves_location_before_keyword_search():
         def __init__(self, card):
             self.card = card
 
+        @property
+        def first(self):
+            return self
+
         def count(self):
             return 1
 
