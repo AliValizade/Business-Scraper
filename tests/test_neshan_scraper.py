@@ -310,3 +310,50 @@ def test_neshan_web_mode_combines_query_and_location():
     assert scraper.page.input.filled == "فست فود مشهد"
     assert scraper.page.input.pressed == "Enter"
     assert scraper.state is ScraperState.LOADING
+
+def test_neshan_web_waits_for_client_rendered_search_input():
+    class DelayedLocator:
+        @property
+        def first(self):
+            return self
+
+        def count(self):
+            return 0
+
+        def wait_for(self, **_kwargs):
+            return None
+
+        def fill(self, value):
+            self.filled = value
+
+        def press(self, value):
+            self.pressed = value
+
+    class FakePage:
+        def __init__(self):
+            self.url = ""
+            self.input = DelayedLocator()
+            self.results = DelayedLocator()
+
+        def goto(self, url, **_kwargs):
+            self.url = url
+
+        def locator(self, selector):
+            if selector == "input.AZLBjuP":
+                return self.input
+            return self.results
+
+    class FakeBrowser:
+        def __init__(self):
+            self.page = FakePage()
+
+    scraper = NeshanScraper(
+        browser_manager=FakeBrowser(),
+        mode="web",
+    )
+
+    scraper.search("فست فود", "تبریز")
+
+    assert scraper.page.input.filled == "فست فود تبریز"
+    assert scraper.page.input.pressed == "Enter"
+    assert scraper.state is ScraperState.LOADING
