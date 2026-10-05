@@ -71,3 +71,29 @@ def test_extract_source_id_returns_none_when_identifier_is_missing():
     assert scraper._extract_source_id(
         "https://www.google.com/maps/place/Test"
     ) is None
+
+
+def test_extract_phone_from_tel_link():
+    browser_manager = FakeBrowserManager()
+    scraper = GoogleMapsScraper(browser_manager)
+
+    card = Mock()
+    phone_link = Mock()
+    phone_link.count.return_value = 1
+    phone_link.get_attribute.return_value = "tel:+982112345678"
+    card.locator.return_value.first = phone_link
+
+    assert scraper._extract_phone(card) == "+982112345678"
+
+
+def test_extract_phone_from_card_text_when_tel_link_is_missing():
+    browser_manager = FakeBrowserManager()
+    scraper = GoogleMapsScraper(browser_manager)
+
+    card = Mock()
+    phone_link = Mock()
+    phone_link.count.return_value = 0
+    card.locator.return_value.first = phone_link
+    card.inner_text.return_value = "رستوران نمونه\n021-12345678"
+
+    assert scraper._extract_phone(card) == "021-12345678"
