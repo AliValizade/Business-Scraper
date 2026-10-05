@@ -265,14 +265,22 @@ class NeshanScraper(BaseScraper):
 
     @staticmethod
     def _first_visible(page, selectors):
+        """Return the first selector that becomes visible.
+
+        Neshan is a client-rendered SPA, so an element may not exist yet
+        immediately after domcontentloaded. Waiting on the locator itself
+        is therefore more reliable than checking count() first.
+        """
         for selector in selectors:
             locator = page.locator(selector).first
-            if locator.count() > 0:
-                try:
-                    locator.wait_for(state="visible", timeout=3000)
-                    return locator
-                except PlaywrightTimeoutError:
-                    continue
+            try:
+                locator.wait_for(
+                    state="visible",
+                    timeout=15000,
+                )
+                return locator
+            except PlaywrightTimeoutError:
+                continue
         return None
 
     def _search_web(self, query, location):
