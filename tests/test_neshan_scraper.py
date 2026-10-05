@@ -307,6 +307,7 @@ def test_neshan_web_mode_combines_query_and_location():
 
     scraper.search("فست فود", "مشهد")
 
+    assert scraper.page.url == "https://neshan.org/maps/search"
     assert scraper.page.input.filled == "فست فود مشهد"
     assert scraper.page.input.pressed == "Enter"
     assert scraper.state is ScraperState.LOADING
