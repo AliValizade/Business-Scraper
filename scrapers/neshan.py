@@ -32,7 +32,7 @@ class NeshanScraper(BaseScraper):
     """
 
     BASE_URL = "https://api.neshan.org"
-    WEB_URL = "https://neshan.org/maps"
+    WEB_URL = "https://neshan.org/maps/search"
     SEARCH_PATH = "/v3/search"
     GEOCODING_PATH = "/geocoding/v1"
     POI_DETAILS_PATH = "/v1/point"
