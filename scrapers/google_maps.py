@@ -507,7 +507,7 @@ class GoogleMapsScraper(BaseScraper):
                 except Exception:
                     pass
 
-            self.page.wait_for_timeout(500)
+            self.page.wait_for_timeout(800)
 
             def extract_phone():
                 selectors = (
@@ -545,6 +545,27 @@ class GoogleMapsScraper(BaseScraper):
 
                         if value.startswith("tel:"):
                             return value[4:].strip()
+
+                # Google Maps can render the phone as plain visible
+                # text without a stable phone-specific attribute.
+                for selector in ('[role="main"]', 'body'):
+                    try:
+                        text = self.page.locator(selector).inner_text()
+                    except Exception:
+                        continue
+
+                    if not isinstance(text, str):
+                        continue
+
+                    phone_match = re.search(
+                        r'(\\+98[\\s\\-()]*\\d{2,3}[\\s\\-()]*\\d{7,8}|'
+                        r'0098[\\s\\-()]*\\d{2,3}[\\s\\-()]*\\d{7,8}|'
+                        r'09\\d{9}|0\\d{2,3}[\\s\\-()]*\\d{7,8})',
+                        text,
+                    )
+
+                    if phone_match:
+                        return phone_match.group(0).strip()
 
                 return None
 
