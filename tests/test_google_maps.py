@@ -143,6 +143,10 @@ def test_extract_business_details_from_place_panel():
         }[selector]
 
     browser_manager.page.locator.side_effect = locator
+    browser_manager.page.wait_for_url = Mock()
+    browser_manager.page.wait_for_timeout = Mock()
+    heading.wait_for = Mock()
+    address.wait_for = Mock()
 
     details = scraper._extract_business_details(card)
 
