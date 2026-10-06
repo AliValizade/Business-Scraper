@@ -161,6 +161,6 @@ def test_extract_business_details_from_place_panel():
     card.scroll_into_view_if_needed.assert_called_once()
     card.click.assert_called_once_with(timeout=10000)
     assert details["name"] == "Dragon"
-    assert details["phone"] == "+98 35 3827 2585"
+    assert details["phone"] == "+983538272585"
     assert details["website"] == "https://www.instagram.com/dragon"
     assert details["address"] == "بلوار مجد العلما، یزد، ایران"
