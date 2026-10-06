@@ -476,26 +476,47 @@ class GoogleMapsScraper(BaseScraper):
             detail_heading.wait_for(state="visible", timeout=10000)
             self.page.wait_for_timeout(300)
 
-            phone = None
-            phone_locator = self.page.locator(
-                'button[data-item-id^="phone:"]'
-            ).first
-
-            if phone_locator.count() > 0:
-                phone = (
-                    phone_locator.get_attribute("aria-label")
-                    or phone_locator.inner_text()
-                    or phone_locator.get_attribute("data-item-id")
+            def extract_phone():
+                phone_selectors = (
+                    'a[href^="tel:"]',
+                    '[data-item-id*="phone"]',
+                    '[aria-label*="Phone"]',
+                    '[aria-label*="phone"]',
                 )
 
-            if phone:
-                phone_match = re.search(
-                    r'(\\+98[\\s\\-()]*\\d{2,3}[\\s\\-()]*\\d{7,8}|'
-                    r'0098[\\s\\-()]*\\d{2,3}[\\s\\-()]*\\d{7,8}|'
-                    r'09\\d{9}|0\\d{2,3}[\\s\\-()]*\\d{7,8})',
-                    phone,
-                )
-                phone = phone_match.group(0).strip() if phone_match else phone.strip()
+                for selector in phone_selectors:
+                    locator = self.page.locator(selector).first
+
+                    if locator.count() == 0:
+                        continue
+
+                    values = (
+                        locator.get_attribute("href"),
+                        locator.get_attribute("aria-label"),
+                        locator.inner_text(),
+                        locator.get_attribute("data-item-id"),
+                    )
+
+                    for value in values:
+                        if not value:
+                            continue
+
+                        phone_match = re.search(
+                            r'(\\+98[\\s\\-()]*\\d{2,3}[\\s\\-()]*\\d{7,8}|'
+                            r'0098[\\s\\-()]*\\d{2,3}[\\s\\-()]*\\d{7,8}|'
+                            r'09\\d{9}|0\\d{2,3}[\\s\\-()]*\\d{7,8})',
+                            value,
+                        )
+
+                        if phone_match:
+                            return phone_match.group(0).strip()
+
+                        if value.startswith("tel:"):
+                            return value[4:].strip()
+
+                return None
+
+            phone = extract_phone()
 
             website = None
             website_locator = self.page.locator(
