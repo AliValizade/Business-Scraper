@@ -533,6 +533,14 @@ class GoogleMapsScraper(BaseScraper):
                         if not isinstance(value, str) or not value:
                             continue
 
+                        # Preserve Google's human-readable phone formatting
+                        # when the value comes from aria-label/visible text.
+                        if value.startswith(("+98", "0098")):
+                            digits = re.sub(r"\D", "", value)
+                            expected_digits = 12 if value.startswith("+98") else 14
+                            if len(digits) == expected_digits:
+                                return value.strip()
+
                         phone_match = re.search(
                             r'(\+98[\s\-()]*\d{2,3}[\s\-()]*\d{7,8}|'
                             r'0098[\s\-()]*\d{2,3}[\s\-()]*\d{7,8}|'
