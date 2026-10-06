@@ -100,6 +100,8 @@ def test_extract_phone_from_card_text_when_tel_link_is_missing():
 
 
 def test_extract_business_details_from_place_panel():
+    scraper.page = browser_manager.page
+
     browser_manager = FakeBrowserManager()
     scraper = GoogleMapsScraper(browser_manager)
 
