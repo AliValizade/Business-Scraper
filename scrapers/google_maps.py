@@ -585,12 +585,21 @@ class GoogleMapsScraper(BaseScraper):
 
             name = detail_heading.inner_text().strip()
 
-            return {
+            result = {
                 "name": name or None,
                 "address": address,
                 "phone": phone,
                 "website": website,
             }
+
+            # Return to the search results before processing the next card.
+            self.page.go_back(wait_until="domcontentloaded", timeout=15000)
+            self.page.locator('div[role="feed"]').wait_for(
+                state="visible",
+                timeout=15000,
+            )
+
+            return result
 
         except Exception as error:
             logger.debug(
