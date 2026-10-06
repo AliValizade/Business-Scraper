@@ -466,6 +466,156 @@ class GoogleMapsScraper(BaseScraper):
 
         return website
 
+    def _extract_business_details(self, card):
+        """Open a result card and extract fields from its loaded place panel."""
+        try:
+            card.scroll_into_view_if_needed()
+            card.click(timeout=10000)
+
+            # The place panel is loaded asynchronously after the click.
+            self.page.wait_for_url(
+                "**/maps/place/**",
+                timeout=15000,
+            )
+
+            detail_heading = self.page.locator(
+                'h1[class*="DUwDvf"]'
+            ).first
+
+            if detail_heading.count() == 0:
+                detail_heading = self.page.locator(
+                    '[role="main"] h1'
+                ).first
+
+            detail_heading.wait_for(
+                state="visible",
+                timeout=15000,
+            )
+
+            # Address is a reliable signal that the detail panel has
+            # finished rendering its contact fields.
+            address_locator = self.page.locator(
+                'button[data-item-id="address"]'
+            ).first
+
+            if address_locator.count() > 0:
+                try:
+                    address_locator.wait_for(
+                        state="visible",
+                        timeout=5000,
+                    )
+                except Exception:
+                    pass
+
+            self.page.wait_for_timeout(800)
+
+            def extract_phone():
+                selectors = (
+                    'button[data-item-id^="phone:tel:"]',
+                    'button[data-item-id^="phone:"]',
+                    'a[href^="tel:"]',
+                )
+
+                for selector in selectors:
+                    locator = self.page.locator(selector).first
+
+                    if locator.count() == 0:
+                        continue
+
+                    values = (
+                        locator.get_attribute("aria-label"),
+                        locator.get_attribute("href"),
+                        locator.inner_text(),
+                        locator.get_attribute("data-item-id"),
+                    )
+
+                    for value in values:
+                        if not isinstance(value, str) or not value:
+                            continue
+
+                        # Preserve Google's human-readable phone formatting
+                        # when the value comes from aria-label/visible text.
+                        if value.startswith(("+98", "0098")):
+                            digits = re.sub(r"\D", "", value)
+                            expected_digits = 12 if value.startswith("+98") else 14
+                            if len(digits) == expected_digits:
+                                return value.strip()
+
+                        phone_match = re.search(
+                            r'(\+98[\s\-()]*\d{2,3}[\s\-()]*\d{7,8}|'
+                            r'0098[\s\-()]*\d{2,3}[\s\-()]*\d{7,8}|'
+                            r'09\d{9}|0\d{2,3}[\s\-()]*\d{7,8})',
+                            value,
+                        )
+
+                        if phone_match:
+                            return phone_match.group(0).strip()
+
+                        if value.startswith("tel:"):
+                            return value[4:].strip()
+
+                # Google Maps can render the phone as plain visible
+                # text without a stable phone-specific attribute.
+                for selector in ('[role="main"]', 'body'):
+                    try:
+                        text = self.page.locator(selector).inner_text()
+                    except Exception:
+                        continue
+
+                    if not isinstance(text, str):
+                        continue
+
+                    phone_match = re.search(
+                        r'(\+98[\s\-()]*\d{2,3}[\s\-()]*\d{7,8}|'
+                        r'0098[\s\-()]*\d{2,3}[\s\-()]*\d{7,8}|'
+                        r'09\d{9}|0\d{2,3}[\s\-()]*\d{7,8})',
+                        text,
+                    )
+
+                    if phone_match:
+                        return phone_match.group(0).strip()
+
+                return None
+
+            phone = extract_phone()
+
+            website = None
+            website_locator = self.page.locator(
+                'a[data-item-id="authority"]'
+            ).first
+
+            if website_locator.count() > 0:
+                website = website_locator.get_attribute("href")
+
+            address = None
+            if address_locator.count() > 0:
+                address = address_locator.inner_text().strip() or None
+
+            name = detail_heading.inner_text().strip()
+
+            result = {
+                "name": name or None,
+                "address": address,
+                "phone": phone,
+                "website": website,
+            }
+
+            # Return to the search results before processing the next card.
+            self.page.go_back(wait_until="domcontentloaded", timeout=15000)
+            self.page.locator('div[role="feed"]').wait_for(
+                state="visible",
+                timeout=15000,
+            )
+
+            return result
+
+        except Exception as error:
+            logger.debug(
+                "Google Maps detail extraction failed | error=%s",
+                error,
+            )
+            return {}
+
     def _extract_business_from_card(self, card):
         lines = [
             line.strip()
@@ -610,6 +760,24 @@ class GoogleMapsScraper(BaseScraper):
         # ----------------------------------------
 
         website = self._extract_website(card)
+
+        # ----------------------------------------
+        # Detail Panel (Google Maps Web)
+        # ----------------------------------------
+
+        details = self._extract_business_details(card)
+
+        if details.get("name"):
+            name = details["name"]
+
+        if details.get("address"):
+            address = details["address"]
+
+        if details.get("phone"):
+            phone = details["phone"]
+
+        if details.get("website"):
+            website = details["website"]
 
         # ----------------------------------------
         # Source ID
