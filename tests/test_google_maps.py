@@ -141,9 +141,12 @@ def test_extract_business_details_from_place_panel():
             'a[data-item-id="authority"]': website,
             'button[data-item-id="address"]': address,
         }[selector]
+        target.first = target
+        return target
 
     browser_manager.page.locator.side_effect = locator
     browser_manager.page.wait_for_url = Mock()
+    browser_manager.page.go_back = Mock()
     browser_manager.page.wait_for_timeout = Mock()
     heading.wait_for = Mock()
     address.wait_for = Mock()
