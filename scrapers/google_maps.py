@@ -467,44 +467,76 @@ class GoogleMapsScraper(BaseScraper):
         return website
 
     def _extract_business_details(self, card):
-        """Open a result card and extract fields exposed in its detail panel."""
+        """Open a result card and extract fields from its loaded place panel."""
         try:
             card.scroll_into_view_if_needed()
             card.click(timeout=10000)
 
-            detail_heading = self.page.locator("h1").first
-            detail_heading.wait_for(state="visible", timeout=10000)
-            self.page.wait_for_timeout(300)
+            # The place panel is loaded asynchronously after the click.
+            self.page.wait_for_url(
+                "**/maps/place/**",
+                timeout=15000,
+            )
+
+            detail_heading = self.page.locator(
+                'h1[class*="DUwDvf"]'
+            ).first
+
+            if detail_heading.count() == 0:
+                detail_heading = self.page.locator(
+                    '[role="main"] h1'
+                ).first
+
+            detail_heading.wait_for(
+                state="visible",
+                timeout=15000,
+            )
+
+            # Address is a reliable signal that the detail panel has
+            # finished rendering its contact fields.
+            address_locator = self.page.locator(
+                'button[data-item-id="address"]'
+            ).first
+
+            if address_locator.count() > 0:
+                try:
+                    address_locator.wait_for(
+                        state="visible",
+                        timeout=5000,
+                    )
+                except Exception:
+                    pass
+
+            self.page.wait_for_timeout(500)
 
             def extract_phone():
-                phone_selectors = (
+                selectors = (
+                    'button[data-item-id^="phone:tel:"]',
+                    'button[data-item-id^="phone:"]',
                     'a[href^="tel:"]',
-                    '[data-item-id*="phone"]',
-                    '[aria-label*="Phone"]',
-                    '[aria-label*="phone"]',
                 )
 
-                for selector in phone_selectors:
+                for selector in selectors:
                     locator = self.page.locator(selector).first
 
                     if locator.count() == 0:
                         continue
 
                     values = (
-                        locator.get_attribute("href"),
                         locator.get_attribute("aria-label"),
+                        locator.get_attribute("href"),
                         locator.inner_text(),
                         locator.get_attribute("data-item-id"),
                     )
 
                     for value in values:
-                        if not value:
+                        if not isinstance(value, str) or not value:
                             continue
 
                         phone_match = re.search(
-                            r'(\+98[\s\-()]*\d{2,3}[\s\-()]*\d{7,8}|'
-                            r'0098[\s\-()]*\d{2,3}[\s\-()]*\d{7,8}|'
-                            r'09\d{9}|0\d{2,3}[\s\-()]*\d{7,8})',
+                            r'(\\+98[\\s\\-()]*\\d{2,3}[\\s\\-()]*\\d{7,8}|'
+                            r'0098[\\s\\-()]*\\d{2,3}[\\s\\-()]*\\d{7,8}|'
+                            r'09\\d{9}|0\\d{2,3}[\\s\\-()]*\\d{7,8})',
                             value,
                         )
 
@@ -527,10 +559,6 @@ class GoogleMapsScraper(BaseScraper):
                 website = website_locator.get_attribute("href")
 
             address = None
-            address_locator = self.page.locator(
-                'button[data-item-id="address"]'
-            ).first
-
             if address_locator.count() > 0:
                 address = address_locator.inner_text().strip() or None
 
