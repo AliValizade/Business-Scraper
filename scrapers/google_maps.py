@@ -466,6 +466,69 @@ class GoogleMapsScraper(BaseScraper):
 
         return website
 
+    def _extract_business_details(self, card):
+        """Open a result card and extract fields exposed in its detail panel."""
+        try:
+            card.scroll_into_view_if_needed()
+            card.click(timeout=10000)
+
+            detail_heading = self.page.locator("h1").first
+            detail_heading.wait_for(state="visible", timeout=10000)
+            self.page.wait_for_timeout(300)
+
+            phone = None
+            phone_locator = self.page.locator(
+                'button[data-item-id^="phone:"]'
+            ).first
+
+            if phone_locator.count() > 0:
+                phone = (
+                    phone_locator.get_attribute("aria-label")
+                    or phone_locator.inner_text()
+                    or phone_locator.get_attribute("data-item-id")
+                )
+
+            if phone:
+                phone_match = re.search(
+                    r'(\\+98[\\s\\-()]*\\d{2,3}[\\s\\-()]*\\d{7,8}|'
+                    r'0098[\\s\\-()]*\\d{2,3}[\\s\\-()]*\\d{7,8}|'
+                    r'09\\d{9}|0\\d{2,3}[\\s\\-()]*\\d{7,8})',
+                    phone,
+                )
+                phone = phone_match.group(0).strip() if phone_match else phone.strip()
+
+            website = None
+            website_locator = self.page.locator(
+                'a[data-item-id="authority"]'
+            ).first
+
+            if website_locator.count() > 0:
+                website = website_locator.get_attribute("href")
+
+            address = None
+            address_locator = self.page.locator(
+                'button[data-item-id="address"]'
+            ).first
+
+            if address_locator.count() > 0:
+                address = address_locator.inner_text().strip() or None
+
+            name = detail_heading.inner_text().strip()
+
+            return {
+                "name": name or None,
+                "address": address,
+                "phone": phone,
+                "website": website,
+            }
+
+        except Exception as error:
+            logger.debug(
+                "Google Maps detail extraction failed | error=%s",
+                error,
+            )
+            return {}
+
     def _extract_business_from_card(self, card):
         lines = [
             line.strip()
@@ -610,6 +673,24 @@ class GoogleMapsScraper(BaseScraper):
         # ----------------------------------------
 
         website = self._extract_website(card)
+
+        # ----------------------------------------
+        # Detail Panel (Google Maps Web)
+        # ----------------------------------------
+
+        details = self._extract_business_details(card)
+
+        if details.get("name"):
+            name = details["name"]
+
+        if details.get("address"):
+            address = details["address"]
+
+        if details.get("phone"):
+            phone = details["phone"]
+
+        if details.get("website"):
+            website = details["website"]
 
         # ----------------------------------------
         # Source ID
