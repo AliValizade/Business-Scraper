@@ -127,8 +127,11 @@ def test_extract_business_details_from_place_panel():
     address.count.return_value = 1
     address.inner_text.return_value = "بلوار مجد العلما، یزد، ایران"
 
+    feed = Mock()
+    feed.wait_for = Mock()
+
     def locator(selector):
-        return {
+        mapping = {
             "h1[class*=\"DUwDvf\"]": heading,
             '[role="main"] h1': heading,
             "h1": heading,
@@ -140,7 +143,9 @@ def test_extract_business_details_from_place_panel():
             '[aria-label*="phone"]': phone,
             'a[data-item-id="authority"]': website,
             'button[data-item-id="address"]': address,
-        }[selector]
+            'div[role="feed"]': feed,
+        }
+        target = mapping[selector]
         target.first = target
         return target
 
