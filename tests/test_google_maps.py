@@ -114,6 +114,7 @@ def test_extract_business_details_from_place_panel():
     phone.count.return_value = 1
     phone.get_attribute.side_effect = lambda name: {
         "aria-label": "Phone: +98 35 3827 2585",
+        "href": "tel:+983538272585",
         "data-item-id": "phone:tel:+983538272585",
     }.get(name)
     phone.inner_text.return_value = "+98 35 3827 2585"
@@ -128,7 +129,11 @@ def test_extract_business_details_from_place_panel():
 
     def locator(selector):
         return {
+            "h1[class*=\"DUwDvf\"]": heading,
+            '[role="main"] h1': heading,
             "h1": heading,
+            'button[data-item-id^="phone:tel:"]': phone,
+            'button[data-item-id^="phone:"]': phone,
             'a[href^="tel:"]': phone,
             '[data-item-id*="phone"]': phone,
             '[aria-label*="Phone"]': phone,
