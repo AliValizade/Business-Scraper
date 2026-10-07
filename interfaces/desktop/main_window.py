@@ -1,5 +1,6 @@
 from PySide6.QtCore import QSettings, QThread, QSize
 from PySide6.QtWidgets import (
+    QFormLayout,
     QGroupBox,
     QProgressBar,
     QHBoxLayout,
