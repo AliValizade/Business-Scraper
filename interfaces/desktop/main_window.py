@@ -1,4 +1,4 @@
-from PySide6.QtCore import QSettings, QThread, QSize
+from PySide6.QtCore import QSettings, QThread, QSize, Qt
 from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
@@ -75,6 +75,9 @@ class MainWindow(QMainWindow):
         self.sidebar_menu = QListWidget()
         self.sidebar_menu.setObjectName("SidebarMenu")
         self.sidebar_menu.setIconSize(QSize(22, 22))
+        self.sidebar_menu.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.sidebar_menu.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.sidebar_menu.setUniformItemSizes(True)
         self._refresh_sidebar_items()
         self.sidebar_menu.currentRowChanged.connect(self._navigate_to_page)
         sidebar_layout.addWidget(self.sidebar_menu)
