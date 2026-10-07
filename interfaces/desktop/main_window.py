@@ -78,6 +78,8 @@ class MainWindow(QMainWindow):
         self.sidebar_menu.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.sidebar_menu.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.sidebar_menu.setUniformItemSizes(True)
+        self.sidebar_menu.setMinimumHeight(6 * 44 + 8)
+        self.sidebar_menu.setMaximumHeight(6 * 44 + 8)
         self._refresh_sidebar_items()
         self.sidebar_menu.currentRowChanged.connect(self._navigate_to_page)
         sidebar_layout.addWidget(self.sidebar_menu)
@@ -370,6 +372,9 @@ class MainWindow(QMainWindow):
             item = self.sidebar_menu.item(index)
             item.setIcon(self.style().standardIcon(self._sidebar_icons[index]))
             item.setText("" if self.sidebar_collapsed else label)
+            item.setTextAlignment(
+                Qt.AlignCenter if self.sidebar_collapsed else Qt.AlignVCenter | Qt.AlignLeft
+            )
 
         if 0 <= current_row < self.sidebar_menu.count():
             self.sidebar_menu.setCurrentRow(current_row)
@@ -377,7 +382,7 @@ class MainWindow(QMainWindow):
 
     def _toggle_sidebar(self):
         self.sidebar_collapsed = not self.sidebar_collapsed
-        self.sidebar.setFixedWidth(64 if self.sidebar_collapsed else 220)
+        self.sidebar.setFixedWidth(72 if self.sidebar_collapsed else 220)
         self.sidebar_title.setVisible(not self.sidebar_collapsed)
         self.sidebar_status.setVisible(not self.sidebar_collapsed)
         self._refresh_sidebar_items()
