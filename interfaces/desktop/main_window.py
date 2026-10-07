@@ -131,6 +131,7 @@ class MainWindow(QMainWindow):
         root_layout.addLayout(header)
 
         scrape_group = QGroupBox("Scrape")
+        scrape_group.setMinimumHeight(145)
         form = QGridLayout(scrape_group)
         form.setContentsMargins(16, 14, 16, 16)
         form.setHorizontalSpacing(12)
@@ -200,6 +201,9 @@ class MainWindow(QMainWindow):
 
         form.setColumnStretch(1, 1)
         form.setColumnStretch(3, 2)
+        form.setRowMinimumHeight(0, 34)
+        form.setRowMinimumHeight(1, 34)
+        form.setRowMinimumHeight(2, 34)
 
         self.license_group = QGroupBox("License")
         license_layout = QHBoxLayout(self.license_group)
@@ -317,6 +321,8 @@ class MainWindow(QMainWindow):
         self.api_key_input.setEnabled(is_api)
         self.api_key_input.setVisible(is_api)
         self.api_key_label.setVisible(is_api)
+        self.max_results_label.setVisible(True)
+        self.max_results_input.setVisible(True)
         self._on_source_changed()
 
     def _on_source_changed(self):
