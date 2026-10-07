@@ -77,3 +77,11 @@ def test_desktop_ui_has_modern_window_basics():
     assert 'self.setMinimumSize(1050, 720)' in source
     assert 'border-radius: 12px' in source
     assert 'font-size: 22pt' in source
+
+
+def test_desktop_scrape_form_uses_compact_grid_layout():
+    source = _desktop_source()
+    assert "form = QGridLayout(scrape_group)" in source
+    assert "self.api_key_label.setVisible(is_api)" in source
+    assert "self.runs_table.setMinimumHeight(145)" in source
+    assert "self.businesses_table.setMinimumHeight(145)" in source
