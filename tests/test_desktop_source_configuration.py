@@ -51,3 +51,29 @@ def test_desktop_google_maps_api_key_placeholder_is_source_aware():
     assert '"Google Maps API key"' in source
     assert '"Neshan API key"' in source
     assert '"API key"' in source
+
+
+def test_desktop_dashboard_has_collapsible_sidebar_navigation():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    assert 'self.sidebar = QWidget()' in source
+    assert 'self.sidebar_menu.addItems(["Dashboard", "Scrape", "Runs", "Results", "Settings", "License"])' in source
+    assert 'self.menu_button = QPushButton("☰")' in source
+    assert 'self.sidebar.setFixedWidth(62 if self.sidebar_collapsed else 210)' in source
+
+
+def test_desktop_dashboard_uses_stacked_pages():
+    source = (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+    assert "self.pages = QStackedWidget()" in source
+    assert "self._build_dashboard_page()" in source
+    assert "self._build_scrape_page()" in source
+    assert "self._build_runs_page()" in source
+    assert "self._build_results_page()" in source
+    assert "self._build_settings_page()" in source
+    assert "self._build_license_page()" in source
+    assert "self.resize(1000, 700)" in source
