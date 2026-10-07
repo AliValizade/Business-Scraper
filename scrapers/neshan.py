@@ -344,11 +344,15 @@ class NeshanScraper(BaseScraper):
             break
 
         if input_locator is None:
-            raise RuntimeError("Neshan search input was not found.")
+                raise RuntimeError("Neshan search input was not found.")
 
         try:
             input_locator.fill(value, timeout=5000)
-        input_locator.press("Enter")
+            input_locator.press("Enter")
+        except Exception as error:
+            raise RuntimeError(
+                f"Neshan search input could not be filled: {error}"
+            ) from error
 
     def _wait_web_results(self):
         page = self._require_page()
