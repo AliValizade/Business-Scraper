@@ -86,6 +86,7 @@ class GoogleMapsScraper(BaseScraper):
 
         self.search_keyword = None
         self.search_location = None
+        self.search_url = None
         self._api_businesses = []
 
     def _require_api_key(self):
@@ -231,6 +232,7 @@ class GoogleMapsScraper(BaseScraper):
         search_query = f"{query} {location}".strip()
         encoded_query = quote_plus(search_query)
         url = f"{self.BASE_SEARCH_URL}?api=1&query={encoded_query}"
+        self.search_url = url
 
         if self.browser_manager.page is None:
             self.set_state(ScraperState.FAILED)
@@ -467,6 +469,32 @@ class GoogleMapsScraper(BaseScraper):
 
         return website
 
+    def _restore_search_page(self):
+        if not self.page or not self.search_url:
+            return False
+        try:
+            current_url = self.page.url or ""
+            if current_url.startswith(self.BASE_SEARCH_URL):
+                self.page.locator('div[role="feed"]').wait_for(
+                    state="visible",
+                    timeout=10000,
+                )
+                return True
+
+            self.page.goto(
+                self.search_url,
+                wait_until="domcontentloaded",
+                timeout=20000,
+            )
+            self.page.locator('div[role="feed"]').wait_for(
+                state="visible",
+                timeout=20000,
+            )
+            return True
+        except Exception:
+            logger.exception("Google Maps search page recovery failed")
+            return False
+
     def _extract_business_details(self, card):
         """Open a result card and extract fields from its loaded place panel."""
         try:
@@ -601,16 +629,15 @@ class GoogleMapsScraper(BaseScraper):
                 "website": website,
             }
 
-            # Return to the search results before processing the next card.
-            self.page.go_back(wait_until="domcontentloaded", timeout=15000)
-            self.page.locator('div[role="feed"]').wait_for(
-                state="visible",
-                timeout=15000,
-            )
+            # Restore the search route explicitly instead of repeatedly using
+            # browser history. This is more stable during long extraction runs.
+            if not self._restore_search_page():
+                raise RuntimeError("Google Maps search page could not be restored.")
 
             return result
 
         except Exception as error:
+            self._restore_search_page()
             logger.debug(
                 "Google Maps detail extraction failed | error=%s",
                 error,
@@ -931,6 +958,13 @@ class GoogleMapsScraper(BaseScraper):
             )
 
             self.page.wait_for_timeout(wait_time)
+
+            try:
+                results_container = self._get_results_container()
+            except Exception:
+                if not self._restore_search_page():
+                    raise
+                results_container = self._get_results_container()
 
             result_cards = results_container.locator(
                 'div[role="article"]'
