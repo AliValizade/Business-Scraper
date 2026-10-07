@@ -4,6 +4,9 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QProgressBar,
     QHBoxLayout,
+    QListWidget,
+    QStyle,
+    QStackedWidget,
     QLabel,
     QFileDialog,
     QComboBox,
@@ -30,80 +33,241 @@ class MainWindow(QMainWindow):
         self._scrape_thread = None
         self._scrape_worker = None
         self.settings = QSettings("Business-Scraper", "Business-Scraper")
+        self.sidebar_collapsed = False
+        self._sidebar_labels = ["Dashboard", "Scrape", "Runs", "Results", "Settings", "License"]
+        self._sidebar_icons = [
+            QStyle.SP_ComputerIcon,
+            QStyle.SP_FileDialogDetailedView,
+            QStyle.SP_BrowserReload,
+            QStyle.SP_FileDialogListView,
+            QStyle.SP_FileDialogContentsView,
+            QStyle.SP_DialogApplyButton,
+        ]
 
         self.setWindowTitle("Business-Scraper")
         saved_size = self.settings.value("window_size")
         if isinstance(saved_size, QSize):
             self.resize(saved_size)
         else:
-            self.resize(1200, 800)
+            self.resize(1000, 700)
+        self.setMinimumSize(900, 620)
 
-        central_widget = QWidget(self)
-        root_layout = QVBoxLayout(central_widget)
+        self.dark_mode = str(self.settings.value("theme", "light")).lower() == "dark"
+        self._apply_theme()
 
-        root_layout.addWidget(QLabel("Business-Scraper"))
+        central = QWidget()
+        outer = QHBoxLayout(central)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
 
-        scrape_group = QGroupBox("Scrape")
-        form = QFormLayout(scrape_group)
+        self.sidebar = QWidget()
+        self.sidebar.setObjectName("Sidebar")
+        self.sidebar.setFixedWidth(210)
+        sidebar_layout = QVBoxLayout(self.sidebar)
+        sidebar_layout.setContentsMargins(10, 18, 10, 18)
+        sidebar_layout.setSpacing(10)
 
+        self.sidebar_title = QLabel("Business-Scraper")
+        self.sidebar_title.setObjectName("AppTitle")
+        self.sidebar_title.setAutoFillBackground(False)
+        sidebar_layout.addWidget(self.sidebar_title)
+
+        self.sidebar_menu = QListWidget()
+        self.sidebar_menu.setObjectName("SidebarMenu")
+        self.sidebar_menu.setIconSize(QSize(22, 22))
+        self._refresh_sidebar_items()
+        self.sidebar_menu.currentRowChanged.connect(self._navigate_to_page)
+        sidebar_layout.addWidget(self.sidebar_menu)
+        sidebar_layout.addStretch()
+
+        self.sidebar_status = QLabel("● Ready")
+        self.sidebar_status.setStyleSheet("color: #94a3b8; padding: 4px;")
+        sidebar_layout.addWidget(self.sidebar_status)
+        outer.addWidget(self.sidebar)
+
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setContentsMargins(20, 16, 20, 20)
+        content_layout.setSpacing(10)
+
+        header = QHBoxLayout()
+        self.menu_button = QPushButton("☰")
+        self.menu_button.setObjectName("MenuButton")
+        self.menu_button.setFixedSize(42, 38)
+        self.menu_button.clicked.connect(self._toggle_sidebar)
+        header.addWidget(self.menu_button)
+        title_box = QVBoxLayout()
+        title_box.setSpacing(1)
+        self.page_title = QLabel("Dashboard")
+        self.page_title.setObjectName("PageTitle")
+        self.page_subtitle = QLabel("Business scraping workspace")
+        self.page_subtitle.setObjectName("PageSubtitle")
+        title_box.addWidget(self.page_title)
+        title_box.addWidget(self.page_subtitle)
+        header.addLayout(title_box)
+        header.addStretch()
+        content_layout.addLayout(header)
+
+        self.pages = QStackedWidget()
+        content_layout.addWidget(self.pages, 1)
+        outer.addWidget(content, 1)
+        self.setCentralWidget(central)
+
+        self._build_dashboard_page()
+        self._build_scrape_page()
+        self._build_runs_page()
+        self._build_results_page()
+        self._build_settings_page()
+        self._build_license_page()
+
+        self.sidebar_menu.setCurrentRow(0)
+        self._on_source_changed()
+        if self.application is not None:
+            self._refresh_license_status()
+            self._load_runs()
+
+    def _apply_theme(self):
+        if self.dark_mode:
+            self.setStyleSheet("""
+                QMainWindow, QWidget { background: #111827; color: #e5e7eb; }
+                QWidget#Sidebar { background: #0f172a; }
+                QLabel#AppTitle { background: transparent; color: white; font-size: 16pt; font-weight: 700; padding: 0; }
+                QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #f8fafc; }
+                QLabel#PageSubtitle { color: #94a3b8; }
+                QPushButton#MenuButton { background: transparent; color: #e5e7eb; border: none; font-size: 18pt; padding: 4px 10px; }
+                QPushButton#MenuButton:hover { background: #1f2937; border-radius: 8px; }
+                QListWidget#SidebarMenu { background: transparent; border: none; color: #e2e8f0; outline: none; padding: 4px 0; }
+                QListWidget#SidebarMenu::item { padding: 9px 8px; margin: 2px 0; border-radius: 8px; min-height: 24px; }
+                QListWidget#SidebarMenu::item:selected { background: #2563eb; color: white; }
+                QGroupBox { background: #1f2937; border: 1px solid #374151; border-radius: 10px; margin-top: 10px; padding: 14px; }
+                QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color: #e5e7eb; font-weight: 600; }
+                QLineEdit, QComboBox, QSpinBox { background: #111827; color: #f9fafb; border: 1px solid #4b5563; border-radius: 7px; padding: 7px 9px; min-height: 18px; }
+                QPushButton { background: #2563eb; color: white; border: none; border-radius: 7px; padding: 8px 14px; font-weight: 600; }
+                QPushButton:hover { background: #1d4ed8; }
+                QPushButton:disabled { background: #374151; color: #9ca3af; }
+                QTableWidget { background: #111827; color: #e5e7eb; border: 1px solid #374151; border-radius: 7px; gridline-color: #374151; selection-background-color: #1d4ed8; selection-color: white; }
+                QHeaderView::section { background: #1f2937; color: #e5e7eb; border: none; padding: 7px; font-weight: 600; }
+                QProgressBar { background: #374151; color: #f9fafb; border: none; border-radius: 5px; min-height: 18px; max-height: 18px; text-align: center; }
+                QProgressBar::chunk { background: #2563eb; border-radius: 5px; }
+                QLabel#Status { color: #cbd5e1; padding: 4px 0; }
+            """)
+        else:
+            self.setStyleSheet("""
+                QMainWindow, QWidget { background: #f5f7fb; color: #172033; }
+                QWidget#Sidebar { background: #172033; }
+                QLabel#AppTitle { background: transparent; color: #f8fafc; font-size: 16pt; font-weight: 700; padding: 0 2px; }
+                QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #172033; }
+                QLabel#PageSubtitle { color: #64748b; }
+                QPushButton#MenuButton { background: transparent; color: #172033; border: none; font-size: 18pt; padding: 4px 10px; }
+                QPushButton#MenuButton:hover { background: #e2e8f0; border-radius: 8px; }
+                QListWidget#SidebarMenu { background: transparent; border: none; color: #e2e8f0; outline: none; padding: 8px; }
+                QListWidget#SidebarMenu::item { padding: 12px 10px; margin: 2px 0; border-radius: 8px; }
+                QListWidget#SidebarMenu::item:selected { background: #2563eb; color: white; }
+                QGroupBox { background: white; border: 1px solid #dfe5ef; border-radius: 10px; margin-top: 10px; padding: 14px; }
+                QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color: #334155; font-weight: 600; }
+                QLineEdit, QComboBox, QSpinBox { background: white; color: #172033; border: 1px solid #cfd7e6; border-radius: 7px; padding: 7px 9px; min-height: 18px; }
+                QPushButton { background: #2563eb; color: white; border: none; border-radius: 7px; padding: 8px 14px; font-weight: 600; }
+                QPushButton:hover { background: #1d4ed8; }
+                QPushButton:disabled { background: #cbd5e1; color: #64748b; }
+                QTableWidget { background: white; color: #172033; border: 1px solid #dfe5ef; border-radius: 7px; gridline-color: #e8edf5; selection-background-color: #dbeafe; selection-color: #172033; }
+                QHeaderView::section { background: #eef2f7; color: #334155; border: none; padding: 7px; font-weight: 600; }
+                QProgressBar { background: #e8edf5; color: #172033; border: none; border-radius: 5px; min-height: 18px; max-height: 18px; text-align: center; }
+                QProgressBar::chunk { background: #2563eb; border-radius: 5px; }
+                QLabel#Status { color: #475569; padding: 4px 0; }
+            """)
+        if hasattr(self, "theme_button"):
+            self.theme_button.setText("Switch to Light" if self.dark_mode else "Switch to Dark")
+
+    def _toggle_theme(self):
+        self.dark_mode = not self.dark_mode
+        self.settings.setValue("theme", "dark" if self.dark_mode else "light")
+        self._apply_theme()
+
+    def _build_dashboard_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        summary = QHBoxLayout()
+        self.dashboard_runs = QLabel("0")
+        self.dashboard_results = QLabel("0")
+        for title, value in (("Runs", self.dashboard_runs), ("Results", self.dashboard_results)):
+            box = QGroupBox(title)
+            box_layout = QVBoxLayout(box)
+            value.setStyleSheet("font-size: 22pt; font-weight: 700;")
+            box_layout.addWidget(value)
+            summary.addWidget(box)
+        layout.addLayout(summary)
+        recent = QGroupBox("Recent Runs")
+        recent_layout = QVBoxLayout(recent)
+        self.dashboard_table = QTableWidget(0, 6)
+        self.dashboard_table.setHorizontalHeaderLabels(["ID", "Source", "Mode", "City", "Status", "Found"])
+        self.dashboard_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.dashboard_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        recent_layout.addWidget(self.dashboard_table)
+        layout.addWidget(recent, 1)
+        self.pages.addWidget(page)
+
+    def _build_scrape_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        group = QGroupBox("New Scrape")
+        form = QFormLayout()
         self.location_input = QLineEdit()
         self.location_input.setPlaceholderText("City or location")
-
         self.source_combo = QComboBox()
         self.source_combo.addItem("Google Maps", "google_maps")
         self.source_combo.addItem("Neshan", "neshan")
-
         self.access_mode_combo = QComboBox()
         self.access_mode_combo.addItem("Web", "web")
         self.access_mode_combo.addItem("API", "api")
-        self.source_combo.currentIndexChanged.connect(
-            self._on_source_changed
-        )
-
+        self.source_combo.currentIndexChanged.connect(self._on_source_changed)
+        self.access_mode_combo.currentIndexChanged.connect(self._on_source_changed)
         self.api_key_input = QLineEdit()
         self.api_key_input.setPlaceholderText("API key")
         self.api_key_input.setEchoMode(QLineEdit.Password)
-        self.api_key_input.setEnabled(False)
-
         self.keywords_input = QLineEdit()
         self.keywords_input.setPlaceholderText("Keyword 1, Keyword 2")
-
         self.max_results_input = QSpinBox()
         self.max_results_input.setRange(0, 10000)
         self.max_results_input.setSpecialValueText("No limit")
-
         form.addRow("Source:", self.source_combo)
         form.addRow("Access mode:", self.access_mode_combo)
         form.addRow("API key:", self.api_key_input)
         form.addRow("Location:", self.location_input)
         form.addRow("Keywords:", self.keywords_input)
         form.addRow("Max results:", self.max_results_input)
-
-        self.license_group = QGroupBox("License")
-        license_layout = QHBoxLayout(self.license_group)
-        self.license_status_label = QLabel()
-        self.license_key_input = QLineEdit()
-        self.license_key_input.setPlaceholderText("License key")
-        self.activate_license_button = QPushButton("Activate")
-        self.activate_license_button.clicked.connect(self._activate_license)
-        license_layout.addWidget(self.license_status_label)
-        license_layout.addWidget(self.license_key_input)
-        license_layout.addWidget(self.activate_license_button)
-
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setRange(0, 100)
-        self.progress_bar.setValue(0)
+        group.setLayout(form)
+        layout.addWidget(group)
 
         actions = QHBoxLayout()
         self.scrape_button = QPushButton("Start Scrape")
         self.scrape_button.clicked.connect(self._start_scrape)
-        actions.addWidget(self.scrape_button)
-
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(self._cancel_scrape)
+        actions.addWidget(self.scrape_button)
         actions.addWidget(self.cancel_button)
+        actions.addStretch()
+        layout.addLayout(actions)
 
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setMinimumHeight(18)
+        layout.addWidget(self.progress_bar)
+        self.status_label = QLabel("Ready.")
+        self.status_label.setObjectName("Status")
+        self.result_label = QLabel("")
+        layout.addWidget(self.status_label)
+        layout.addWidget(self.result_label)
+        layout.addStretch()
+        self.pages.addWidget(page)
+
+    def _build_runs_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        toolbar = QHBoxLayout()
+        self.refresh_runs_button = QPushButton("Refresh Runs")
+        self.refresh_runs_button.clicked.connect(self._load_runs)
         self.export_format_combo = QComboBox()
         self.export_format_combo.addItems(["csv", "excel", "json"])
         saved_format = self.settings.value("export_format", "csv")
@@ -113,31 +277,13 @@ class MainWindow(QMainWindow):
         self.export_format_combo.currentTextChanged.connect(
             lambda value: self.settings.setValue("export_format", value)
         )
-
         self.export_button = QPushButton("Export Selected Run")
         self.export_button.clicked.connect(self._export_selected_run)
-
-        actions.addWidget(self.export_format_combo)
-        actions.addWidget(self.export_button)
-
-        self.refresh_runs_button = QPushButton("Refresh Runs")
-        self.refresh_runs_button.clicked.connect(self._load_runs)
-        actions.addWidget(self.refresh_runs_button)
-        actions.addStretch()
-
-        self.status_label = QLabel("Ready.")
-        self.result_label = QLabel("")
-
-        root_layout.addWidget(scrape_group)
-        root_layout.addWidget(self.license_group)
-        root_layout.addWidget(self.progress_bar)
-        root_layout.addLayout(actions)
-        root_layout.addWidget(self.status_label)
-        root_layout.addWidget(self.result_label)
-
-        runs_group = QGroupBox("Run History")
-        runs_layout = QVBoxLayout(runs_group)
-
+        toolbar.addWidget(self.refresh_runs_button)
+        toolbar.addStretch()
+        toolbar.addWidget(self.export_format_combo)
+        toolbar.addWidget(self.export_button)
+        layout.addLayout(toolbar)
         self.runs_table = QTableWidget(0, 8)
         self.runs_table.setHorizontalHeaderLabels(
             ["ID", "Source", "Mode", "City", "Keyword", "Status", "Found", "Started"]
@@ -145,29 +291,110 @@ class MainWindow(QMainWindow):
         self.runs_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.runs_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.runs_table.itemSelectionChanged.connect(self._load_selected_run_businesses)
-        runs_layout.addWidget(self.runs_table)
+        self.runs_table.cellClicked.connect(self._open_run_results)
+        layout.addWidget(self.runs_table)
+        self.pages.addWidget(page)
 
-        businesses_group = QGroupBox("Businesses in Selected Run")
-        businesses_layout = QVBoxLayout(businesses_group)
-
+    def _build_results_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
         self.businesses_table = QTableWidget(0, 6)
-        self.businesses_table.setHorizontalHeaderLabels(
-            ["ID", "Name", "Category", "City", "Phone", "Rating"]
-        )
+        self.businesses_table.setHorizontalHeaderLabels(["ID", "Name", "Category", "City", "Phone", "Rating"])
         self.businesses_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.businesses_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        businesses_layout.addWidget(self.businesses_table)
+        layout.addWidget(self.businesses_table)
+        self.pages.addWidget(page)
 
-        root_layout.addWidget(runs_group)
-        root_layout.addWidget(businesses_group)
-        root_layout.addStretch()
+    def _build_settings_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        group = QGroupBox("Appearance")
+        form = QFormLayout()
+        self.theme_button = QPushButton()
+        self.theme_button.clicked.connect(self._toggle_theme)
+        form.addRow("Theme:", self.theme_button)
+        group.setLayout(form)
+        layout.addWidget(group)
+        layout.addStretch()
+        self.pages.addWidget(page)
 
-        self.setCentralWidget(central_widget)
+    def _build_license_page(self):
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        self.license_group = QGroupBox("License")
+        license_layout = QHBoxLayout(self.license_group)
+        self.license_status_label = QLabel()
+        self.license_key_input = QLineEdit()
+        self.license_key_input.setPlaceholderText("License key")
+        self.activate_license_button = QPushButton("Activate")
+        self.activate_license_button.clicked.connect(self._activate_license)
+        license_layout.addWidget(self.license_status_label)
+        license_layout.addWidget(self.license_key_input, 1)
+        license_layout.addWidget(self.activate_license_button)
+        layout.addWidget(self.license_group)
+        layout.addStretch()
+        self.pages.addWidget(page)
 
-        self._on_source_changed()
-        if self.application is not None:
-            self._refresh_license_status()
-            self._load_runs()
+    def _navigate_to_page(self, index):
+        if index < 0:
+            return
+        self.pages.setCurrentIndex(index)
+        titles = [
+            ("Dashboard", "Business scraping workspace"),
+            ("Scrape", "Create a new scraping run"),
+            ("Runs", "Run history and exports"),
+            ("Results", "Businesses from the selected run"),
+            ("Settings", "Application preferences"),
+            ("License", "License and activation"),
+        ]
+        title, subtitle = titles[index]
+        self.page_title.setText(title)
+        self.page_subtitle.setText(subtitle)
+        if index == 0:
+            self._refresh_dashboard()
+
+    def _refresh_sidebar_items(self):
+        current_row = self.sidebar_menu.currentRow()
+        self.sidebar_menu.blockSignals(True)
+        self.sidebar_menu.clear()
+
+        # Keep this explicit addItems call as the stable navigation contract.
+        self.sidebar_menu.addItems(
+            ["Dashboard", "Scrape", "Runs", "Results", "Settings", "License"]
+        )
+
+        for index, label in enumerate(self._sidebar_labels):
+            item = self.sidebar_menu.item(index)
+            item.setIcon(self.style().standardIcon(self._sidebar_icons[index]))
+            item.setText("" if self.sidebar_collapsed else label)
+
+        if 0 <= current_row < self.sidebar_menu.count():
+            self.sidebar_menu.setCurrentRow(current_row)
+        self.sidebar_menu.blockSignals(False)
+
+    def _toggle_sidebar(self):
+        self.sidebar_collapsed = not self.sidebar_collapsed
+        self.sidebar.setFixedWidth(64 if self.sidebar_collapsed else 220)
+        self.sidebar_title.setVisible(not self.sidebar_collapsed)
+        self.sidebar_status.setVisible(not self.sidebar_collapsed)
+        self._refresh_sidebar_items()
+
+    def _refresh_dashboard(self):
+        if self.application is None:
+            return
+        try:
+            runs = self.application.run_service.list_runs()
+            self.dashboard_runs.setText(str(len(runs)))
+            self.dashboard_results.setText(str(sum(run.total_found or 0 for run in runs)))
+            self.dashboard_table.setRowCount(0)
+            for run in runs[:10]:
+                row = self.dashboard_table.rowCount()
+                self.dashboard_table.insertRow(row)
+                values = (run.id, run.source, run.access_mode, run.city, run.status, run.total_found)
+                for col, value in enumerate(values):
+                    self.dashboard_table.setItem(row, col, QTableWidgetItem(str(value)))
+        except Exception as exc:
+            self._set_status(f"Could not refresh dashboard: {exc}", error=True)
 
     def closeEvent(self, event):
         if self._scrape_thread is not None and self._scrape_thread.isRunning():
@@ -412,6 +639,13 @@ class MainWindow(QMainWindow):
                     )
         except Exception as exc:
             self._set_status(f"Could not load runs: {exc}", error=True)
+
+    def _open_run_results(self, row, _column):
+        if self.application is None:
+            return
+        self.runs_table.selectRow(row)
+        self._load_selected_run_businesses()
+        self.sidebar_menu.setCurrentRow(3)
 
     def _load_selected_run_businesses(self):
         if self.application is None:
