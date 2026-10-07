@@ -1,6 +1,11 @@
 from pathlib import Path
 
 
+def _desktop_source():
+    return (PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py").read_text(encoding="utf-8")
+
+
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
