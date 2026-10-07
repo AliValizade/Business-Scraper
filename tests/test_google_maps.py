@@ -152,6 +152,7 @@ def test_extract_business_details_from_place_panel():
     browser_manager.page.locator.side_effect = locator
     browser_manager.page.wait_for_url = Mock()
     browser_manager.page.go_back = Mock()
+    browser_manager.page.url = "https://www.google.com/maps/place/Dragon"
     browser_manager.page.wait_for_timeout = Mock()
     heading.wait_for = Mock()
     address.wait_for = Mock()
