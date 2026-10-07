@@ -73,6 +73,7 @@ def test_google_maps_api_search_maps_places():
     assert url == GoogleMapsScraper.PLACES_API_URL
     assert headers["X-Goog-Api-Key"] == "test-key"
     assert "places.id" in headers["X-Goog-FieldMask"]
+    assert "nextPageToken" in headers["X-Goog-FieldMask"]
     assert body["textQuery"] == "رستوران مشهد"
     assert body["pageSize"] == 20
 
