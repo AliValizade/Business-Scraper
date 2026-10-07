@@ -40,6 +40,7 @@ class GoogleMapsScraper(BaseScraper):
             "places.userRatingCount",
             "places.primaryType",
             "places.googleMapsUri",
+            "nextPageToken",
         )
     )
     API_PAGE_SIZE = 20
