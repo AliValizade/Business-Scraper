@@ -497,6 +497,20 @@ class GoogleMapsScraper(BaseScraper):
             logger.exception("Google Maps search page recovery failed")
             return False
 
+    def _close_place_panel(self):
+        if not self.page:
+            return False
+        for selector in ('button[aria-label="Close"]', 'button[aria-label="بستن"]'):
+            try:
+                button = self.page.locator(selector).first
+                if button.count() > 0:
+                    button.click(timeout=5000)
+                    self.page.wait_for_timeout(300)
+                    return True
+            except Exception:
+                continue
+        return False
+
     def _extract_business_details(self, card):
         """Open a result card and extract fields from its loaded place panel."""
         try:
@@ -631,15 +645,13 @@ class GoogleMapsScraper(BaseScraper):
                 "website": website,
             }
 
-            # Restore the search route explicitly instead of repeatedly using
-            # browser history. This is more stable during long extraction runs.
-            if not self._restore_search_page():
-                raise RuntimeError("Google Maps search page could not be restored.")
-
+            # Close the place panel in-place instead of navigating back.
+            # This preserves the live search/feed DOM during long runs.
+            self._close_place_panel()
             return result
 
         except Exception as error:
-            self._restore_search_page()
+            self._close_place_panel()
             logger.debug(
                 "Google Maps detail extraction failed | error=%s",
                 error,
