@@ -32,6 +32,80 @@ class MainWindow(QMainWindow):
         self.settings = QSettings("Business-Scraper", "Business-Scraper")
 
         self.setWindowTitle("Business-Scraper")
+        self.setMinimumSize(1050, 720)
+        self.setStyleSheet("""
+            QMainWindow, QWidget {
+                background: #f5f7fb;
+                color: #172033;
+                font-size: 10pt;
+            }
+            QGroupBox {
+                background: #ffffff;
+                border: 1px solid #dfe5ef;
+                border-radius: 12px;
+                margin-top: 12px;
+                padding: 14px;
+                font-weight: 600;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 14px;
+                padding: 0 6px;
+                color: #24324a;
+            }
+            QLineEdit, QComboBox, QSpinBox {
+                background: #ffffff;
+                border: 1px solid #cfd7e6;
+                border-radius: 8px;
+                padding: 8px 10px;
+                min-height: 20px;
+            }
+            QLineEdit:focus, QComboBox:focus, QSpinBox:focus {
+                border: 1px solid #3b82f6;
+            }
+            QPushButton {
+                background: #2563eb;
+                color: #ffffff;
+                border: none;
+                border-radius: 8px;
+                padding: 9px 16px;
+                font-weight: 600;
+            }
+            QPushButton:hover { background: #1d4ed8; }
+            QPushButton:disabled {
+                background: #cbd5e1;
+                color: #64748b;
+            }
+            QProgressBar {
+                background: #e8edf5;
+                border: none;
+                border-radius: 6px;
+                min-height: 10px;
+                max-height: 10px;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background: #2563eb;
+                border-radius: 6px;
+            }
+            QTableWidget {
+                background: #ffffff;
+                alternate-background-color: #f8fafc;
+                border: 1px solid #dfe5ef;
+                border-radius: 8px;
+                gridline-color: #e8edf5;
+                selection-background-color: #dbeafe;
+                selection-color: #172033;
+            }
+            QHeaderView::section {
+                background: #eef2f7;
+                color: #334155;
+                border: none;
+                border-bottom: 1px solid #dfe5ef;
+                padding: 8px;
+                font-weight: 600;
+            }
+        """)
         saved_size = self.settings.value("window_size")
         if isinstance(saved_size, QSize):
             self.resize(saved_size)
@@ -40,8 +114,21 @@ class MainWindow(QMainWindow):
 
         central_widget = QWidget(self)
         root_layout = QVBoxLayout(central_widget)
+        root_layout.setContentsMargins(24, 20, 24, 24)
+        root_layout.setSpacing(14)
 
-        root_layout.addWidget(QLabel("Business-Scraper"))
+        header = QHBoxLayout()
+        title = QLabel("Business-Scraper")
+        title.setStyleSheet("font-size: 22pt; font-weight: 700; color: #172033;")
+        subtitle = QLabel("Multi-source business data collection")
+        subtitle.setStyleSheet("color: #64748b; font-size: 10pt;")
+        header_text = QVBoxLayout()
+        header_text.setSpacing(2)
+        header_text.addWidget(title)
+        header_text.addWidget(subtitle)
+        header.addLayout(header_text)
+        header.addStretch()
+        root_layout.addLayout(header)
 
         scrape_group = QGroupBox("Scrape")
         form = QFormLayout(scrape_group)
@@ -52,18 +139,32 @@ class MainWindow(QMainWindow):
         self.source_combo = QComboBox()
         self.source_combo.addItem("Google Maps", "google_maps")
         self.source_combo.addItem("Neshan", "neshan")
+        saved_source = self.settings.value("source", "google_maps")
+        source_index = self.source_combo.findData(str(saved_source))
+        if source_index >= 0:
+            self.source_combo.setCurrentIndex(source_index)
 
         self.access_mode_combo = QComboBox()
         self.access_mode_combo.addItem("Web", "web")
         self.access_mode_combo.addItem("API", "api")
+        saved_mode = self.settings.value("access_mode", "web")
+        mode_index = self.access_mode_combo.findData(str(saved_mode))
+        if mode_index >= 0:
+            self.access_mode_combo.setCurrentIndex(mode_index)
+        self.source_combo.currentIndexChanged.connect(self._on_source_changed)
+        self.access_mode_combo.currentIndexChanged.connect(self._on_access_mode_changed)
         self.source_combo.currentIndexChanged.connect(
-            self._on_source_changed
+            lambda: self.settings.setValue("source", self.source_combo.currentData())
+        )
+        self.access_mode_combo.currentIndexChanged.connect(
+            lambda: self.settings.setValue("access_mode", self.access_mode_combo.currentData())
         )
 
         self.api_key_input = QLineEdit()
         self.api_key_input.setPlaceholderText("API key")
         self.api_key_input.setEchoMode(QLineEdit.Password)
         self.api_key_input.setEnabled(False)
+        self.api_key_input.setPlaceholderText("API key is required only in API mode")
 
         self.keywords_input = QLineEdit()
         self.keywords_input.setPlaceholderText("Keyword 1, Keyword 2")
@@ -165,6 +266,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         self._on_source_changed()
+        self._on_access_mode_changed()
         if self.application is not None:
             self._refresh_license_status()
             self._load_runs()
@@ -183,6 +285,12 @@ class MainWindow(QMainWindow):
         self.status_label.setProperty("error", error)
         self.status_label.style().unpolish(self.status_label)
         self.status_label.style().polish(self.status_label)
+
+    def _on_access_mode_changed(self):
+        is_api = self.access_mode_combo.currentData() == "api"
+        self.api_key_input.setEnabled(is_api)
+        self.api_key_input.setVisible(is_api)
+        self._on_source_changed()
 
     def _on_source_changed(self):
         is_api = self.access_mode_combo.currentData() == "api"
