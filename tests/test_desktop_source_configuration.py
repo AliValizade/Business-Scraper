@@ -53,7 +53,14 @@ def test_desktop_google_maps_api_key_placeholder_is_source_aware():
     assert '"API key"' in source
 
 
+def _desktop_source():
+    return (
+        PROJECT_ROOT / "interfaces" / "desktop" / "main_window.py"
+    ).read_text(encoding="utf-8")
+
+
 def test_desktop_source_and_mode_preferences_are_persisted():
+    source = _desktop_source()
     assert 'self.settings.value("source", "google_maps")' in source
     assert 'self.settings.value("access_mode", "web")' in source
     assert 'self.settings.setValue("source", self.source_combo.currentData())' in source
@@ -61,10 +68,12 @@ def test_desktop_source_and_mode_preferences_are_persisted():
 
 
 def test_desktop_api_key_is_hidden_outside_api_mode():
+    source = _desktop_source()
     assert "self.api_key_input.setVisible(is_api)" in source
 
 
 def test_desktop_ui_has_modern_window_basics():
+    source = _desktop_source()
     assert 'self.setMinimumSize(1050, 720)' in source
     assert 'border-radius: 12px' in source
     assert 'font-size: 22pt' in source
