@@ -310,8 +310,7 @@ class NeshanScraper(BaseScraper):
             except PlaywrightTimeoutError:
                 continue
 
-            # Neshan initially exposes a readonly search shell. Clicking it
-            # opens/enables the real search control.
+            # Neshan initially exposes a readonly search shell.
             try:
                 readonly = candidate.get_attribute("readonly")
             except Exception:
@@ -320,11 +319,25 @@ class NeshanScraper(BaseScraper):
             if readonly is not None:
                 try:
                     candidate.click()
-                    candidate.wait_for(
+                    page.wait_for_timeout(250)
+                except Exception:
+                    continue
+
+                # Clicking the readonly shell can replace it with a real
+                # editable search input. Re-acquire the DOM node instead of
+                # filling the stale readonly locator.
+                editable = page.locator(
+                    'input[type="search"]:not([readonly]), '
+                    'input[placeholder*="جستجو"]:not([readonly])'
+                ).first
+                try:
+                    editable.wait_for(
                         state="visible",
                         timeout=5000,
                     )
-                except Exception:
+                    input_locator = editable
+                    break
+                except PlaywrightTimeoutError:
                     continue
 
             input_locator = candidate
@@ -335,11 +348,6 @@ class NeshanScraper(BaseScraper):
 
         try:
             input_locator.fill(value, timeout=5000)
-        except Exception as error:
-            raise RuntimeError(
-                "Neshan search input was not editable."
-            ) from error
-
         input_locator.press("Enter")
 
     def _wait_web_results(self):
