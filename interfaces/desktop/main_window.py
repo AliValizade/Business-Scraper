@@ -42,61 +42,8 @@ class MainWindow(QMainWindow):
             self.resize(1000, 700)
         self.setMinimumSize(900, 620)
 
-        self.setStyleSheet("""
-            QMainWindow, QWidget { background: #f5f7fb; color: #172033; }
-            QFrame#Sidebar { background: #172033; }
-            QLabel#AppTitle { color: white; font-size: 16pt; font-weight: 700; }
-            QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #172033; }
-            QLabel#PageSubtitle { color: #64748b; }
-            QPushButton#MenuButton {
-                background: transparent; color: #172033; border: none;
-                font-size: 18pt; padding: 4px 10px;
-            }
-            QPushButton#MenuButton:hover { background: #e2e8f0; border-radius: 8px; }
-            QListWidget#SidebarMenu {
-                background: transparent; border: none; color: #cbd5e1;
-                outline: none; padding: 8px;
-            }
-            QListWidget#SidebarMenu::item {
-                padding: 12px 10px; margin: 2px 0; border-radius: 8px;
-            }
-            QListWidget#SidebarMenu::item:selected {
-                background: #2563eb; color: white;
-            }
-            QGroupBox {
-                background: white; border: 1px solid #dfe5ef; border-radius: 10px;
-                margin-top: 10px; padding: 14px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin; left: 14px; padding: 0 6px;
-                color: #334155; font-weight: 600;
-            }
-            QLineEdit, QComboBox, QSpinBox {
-                background: white; border: 1px solid #cfd7e6;
-                border-radius: 7px; padding: 7px 9px; min-height: 18px;
-            }
-            QPushButton {
-                background: #2563eb; color: white; border: none;
-                border-radius: 7px; padding: 8px 14px; font-weight: 600;
-            }
-            QPushButton:hover { background: #1d4ed8; }
-            QPushButton:disabled { background: #cbd5e1; color: #64748b; }
-            QTableWidget {
-                background: white; border: 1px solid #dfe5ef; border-radius: 7px;
-                gridline-color: #e8edf5; selection-background-color: #dbeafe;
-                selection-color: #172033;
-            }
-            QHeaderView::section {
-                background: #eef2f7; border: none; padding: 7px;
-                font-weight: 600; color: #334155;
-            }
-            QProgressBar {
-                background: #e8edf5; border: none; border-radius: 5px;
-                min-height: 9px; max-height: 9px;
-            }
-            QProgressBar::chunk { background: #2563eb; border-radius: 5px; }
-            QLabel#Status { color: #475569; padding: 4px 0; }
-        """)
+        self.dark_mode = str(self.settings.value("theme", "light")).lower() == "dark"
+        self._apply_theme()
 
         central = QWidget()
         outer = QHBoxLayout(central)
@@ -167,6 +114,63 @@ class MainWindow(QMainWindow):
             self._refresh_license_status()
             self._load_runs()
 
+    def _apply_theme(self):
+        if self.dark_mode:
+            self.setStyleSheet("""
+                QMainWindow, QWidget { background: #111827; color: #e5e7eb; }
+                QWidget#Sidebar { background: #0f172a; }
+                QLabel#AppTitle { color: white; font-size: 16pt; font-weight: 700; }
+                QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #f8fafc; }
+                QLabel#PageSubtitle { color: #94a3b8; }
+                QPushButton#MenuButton { background: transparent; color: #e5e7eb; border: none; font-size: 18pt; padding: 4px 10px; }
+                QPushButton#MenuButton:hover { background: #1f2937; border-radius: 8px; }
+                QListWidget#SidebarMenu { background: transparent; border: none; color: #e2e8f0; outline: none; padding: 8px; }
+                QListWidget#SidebarMenu::item { padding: 12px 10px; margin: 2px 0; border-radius: 8px; }
+                QListWidget#SidebarMenu::item:selected { background: #2563eb; color: white; }
+                QGroupBox { background: #1f2937; border: 1px solid #374151; border-radius: 10px; margin-top: 10px; padding: 14px; }
+                QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color: #e5e7eb; font-weight: 600; }
+                QLineEdit, QComboBox, QSpinBox { background: #111827; color: #f9fafb; border: 1px solid #4b5563; border-radius: 7px; padding: 7px 9px; min-height: 18px; }
+                QPushButton { background: #2563eb; color: white; border: none; border-radius: 7px; padding: 8px 14px; font-weight: 600; }
+                QPushButton:hover { background: #1d4ed8; }
+                QPushButton:disabled { background: #374151; color: #9ca3af; }
+                QTableWidget { background: #111827; color: #e5e7eb; border: 1px solid #374151; border-radius: 7px; gridline-color: #374151; selection-background-color: #1d4ed8; selection-color: white; }
+                QHeaderView::section { background: #1f2937; color: #e5e7eb; border: none; padding: 7px; font-weight: 600; }
+                QProgressBar { background: #374151; color: #f9fafb; border: none; border-radius: 5px; min-height: 18px; max-height: 18px; text-align: center; }
+                QProgressBar::chunk { background: #2563eb; border-radius: 5px; }
+                QLabel#Status { color: #cbd5e1; padding: 4px 0; }
+            """)
+        else:
+            self.setStyleSheet("""
+                QMainWindow, QWidget { background: #f5f7fb; color: #172033; }
+                QWidget#Sidebar { background: #172033; }
+                QLabel#AppTitle { color: white; font-size: 16pt; font-weight: 700; }
+                QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #172033; }
+                QLabel#PageSubtitle { color: #64748b; }
+                QPushButton#MenuButton { background: transparent; color: #172033; border: none; font-size: 18pt; padding: 4px 10px; }
+                QPushButton#MenuButton:hover { background: #e2e8f0; border-radius: 8px; }
+                QListWidget#SidebarMenu { background: transparent; border: none; color: #e2e8f0; outline: none; padding: 8px; }
+                QListWidget#SidebarMenu::item { padding: 12px 10px; margin: 2px 0; border-radius: 8px; }
+                QListWidget#SidebarMenu::item:selected { background: #2563eb; color: white; }
+                QGroupBox { background: white; border: 1px solid #dfe5ef; border-radius: 10px; margin-top: 10px; padding: 14px; }
+                QGroupBox::title { subcontrol-origin: margin; left: 14px; padding: 0 6px; color: #334155; font-weight: 600; }
+                QLineEdit, QComboBox, QSpinBox { background: white; color: #172033; border: 1px solid #cfd7e6; border-radius: 7px; padding: 7px 9px; min-height: 18px; }
+                QPushButton { background: #2563eb; color: white; border: none; border-radius: 7px; padding: 8px 14px; font-weight: 600; }
+                QPushButton:hover { background: #1d4ed8; }
+                QPushButton:disabled { background: #cbd5e1; color: #64748b; }
+                QTableWidget { background: white; color: #172033; border: 1px solid #dfe5ef; border-radius: 7px; gridline-color: #e8edf5; selection-background-color: #dbeafe; selection-color: #172033; }
+                QHeaderView::section { background: #eef2f7; color: #334155; border: none; padding: 7px; font-weight: 600; }
+                QProgressBar { background: #e8edf5; color: #172033; border: none; border-radius: 5px; min-height: 18px; max-height: 18px; text-align: center; }
+                QProgressBar::chunk { background: #2563eb; border-radius: 5px; }
+                QLabel#Status { color: #475569; padding: 4px 0; }
+            """)
+        if hasattr(self, "theme_button"):
+            self.theme_button.setText("Switch to Light" if self.dark_mode else "Switch to Dark")
+
+    def _toggle_theme(self):
+        self.dark_mode = not self.dark_mode
+        self.settings.setValue("theme", "dark" if self.dark_mode else "light")
+        self._apply_theme()
+
     def _build_dashboard_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
@@ -236,6 +240,7 @@ class MainWindow(QMainWindow):
         self.progress_bar = QProgressBar()
         self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
+        self.progress_bar.setMinimumHeight(18)
         layout.addWidget(self.progress_bar)
         self.status_label = QLabel("Ready.")
         self.status_label.setObjectName("Status")
@@ -274,6 +279,7 @@ class MainWindow(QMainWindow):
         self.runs_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.runs_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.runs_table.itemSelectionChanged.connect(self._load_selected_run_businesses)
+        self.runs_table.cellClicked.connect(self._open_run_results)
         layout.addWidget(self.runs_table)
         self.pages.addWidget(page)
 
@@ -600,6 +606,13 @@ class MainWindow(QMainWindow):
                     )
         except Exception as exc:
             self._set_status(f"Could not load runs: {exc}", error=True)
+
+    def _open_run_results(self, row, _column):
+        if self.application is None:
+            return
+        self.runs_table.selectRow(row)
+        self._load_selected_run_businesses()
+        self.sidebar_menu.setCurrentRow(3)
 
     def _load_selected_run_businesses(self):
         if self.application is None:
