@@ -77,3 +77,24 @@ def test_desktop_dashboard_uses_stacked_pages():
     assert "self._build_settings_page()" in source
     assert "self._build_license_page()" in source
     assert "self.resize(1000, 700)" in source
+
+
+def test_desktop_supports_light_and_dark_themes():
+    source = _desktop_source()
+    assert 'self.dark_mode = str(self.settings.value("theme", "light")).lower() == "dark"' in source
+    assert 'self.settings.setValue("theme", "dark" if self.dark_mode else "light")' in source
+    assert "QWidget#Sidebar" in source
+    assert "Switch to Dark" in source
+    assert "Switch to Light" in source
+
+
+def test_desktop_progress_bar_is_readable():
+    source = _desktop_source()
+    assert "self.progress_bar.setMinimumHeight(18)" in source
+    assert "text-align: center" in source
+
+
+def test_run_rows_open_results_directly():
+    source = _desktop_source()
+    assert "self.runs_table.cellClicked.connect(self._open_run_results)" in source
+    assert "self.sidebar_menu.setCurrentRow(3)" in source
