@@ -33,6 +33,7 @@ class MainWindow(QMainWindow):
         self._scrape_worker = None
         self.settings = QSettings("Business-Scraper", "Business-Scraper")
         self.sidebar_collapsed = False
+        self._sidebar_items = [("⌂", "Dashboard"), ("⌕", "Scrape"), ("↻", "Runs"), ("▤", "Results"), ("⚙", "Settings"), ("▣", "License")]
 
         self.setWindowTitle("Business-Scraper")
         saved_size = self.settings.value("window_size")
@@ -63,7 +64,7 @@ class MainWindow(QMainWindow):
 
         self.sidebar_menu = QListWidget()
         self.sidebar_menu.setObjectName("SidebarMenu")
-        self.sidebar_menu.addItems(["Dashboard", "Scrape", "Runs", "Results", "Settings", "License"])
+        self._refresh_sidebar_items()
         self.sidebar_menu.currentRowChanged.connect(self._navigate_to_page)
         sidebar_layout.addWidget(self.sidebar_menu)
         sidebar_layout.addStretch()
@@ -119,7 +120,7 @@ class MainWindow(QMainWindow):
             self.setStyleSheet("""
                 QMainWindow, QWidget { background: #111827; color: #e5e7eb; }
                 QWidget#Sidebar { background: #0f172a; }
-                QLabel#AppTitle { color: white; font-size: 16pt; font-weight: 700; }
+                QLabel#AppTitle { background: transparent; color: white; font-size: 16pt; font-weight: 700; padding: 0; }
                 QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #f8fafc; }
                 QLabel#PageSubtitle { color: #94a3b8; }
                 QPushButton#MenuButton { background: transparent; color: #e5e7eb; border: none; font-size: 18pt; padding: 4px 10px; }
@@ -340,11 +341,22 @@ class MainWindow(QMainWindow):
         if index == 0:
             self._refresh_dashboard()
 
+    def _refresh_sidebar_items(self):
+        current_row = self.sidebar_menu.currentRow() if hasattr(self, "sidebar_menu") else -1
+        self.sidebar_menu.blockSignals(True)
+        self.sidebar_menu.clear()
+        for icon, label in self._sidebar_items:
+            self.sidebar_menu.addItem(icon if self.sidebar_collapsed else f"{icon}  {label}")
+        if 0 <= current_row < self.sidebar_menu.count():
+            self.sidebar_menu.setCurrentRow(current_row)
+        self.sidebar_menu.blockSignals(False)
+
     def _toggle_sidebar(self):
         self.sidebar_collapsed = not self.sidebar_collapsed
         self.sidebar.setFixedWidth(62 if self.sidebar_collapsed else 210)
         self.sidebar_title.setVisible(not self.sidebar_collapsed)
         self.sidebar_status.setVisible(not self.sidebar_collapsed)
+        self._refresh_sidebar_items()
 
     def _refresh_dashboard(self):
         if self.application is None:
