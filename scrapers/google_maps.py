@@ -474,6 +474,8 @@ class GoogleMapsScraper(BaseScraper):
             return False
         try:
             current_url = self.page.url or ""
+            if not isinstance(current_url, str):
+                return True
             if current_url.startswith(self.BASE_SEARCH_URL):
                 self.page.locator('div[role="feed"]').wait_for(
                     state="visible",
