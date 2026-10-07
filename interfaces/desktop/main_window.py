@@ -1,6 +1,6 @@
 from PySide6.QtCore import QSettings, QThread, QSize
 from PySide6.QtWidgets import (
-    QFormLayout,
+    QGridLayout,
     QGroupBox,
     QProgressBar,
     QHBoxLayout,
@@ -131,7 +131,10 @@ class MainWindow(QMainWindow):
         root_layout.addLayout(header)
 
         scrape_group = QGroupBox("Scrape")
-        form = QFormLayout(scrape_group)
+        form = QGridLayout(scrape_group)
+        form.setContentsMargins(16, 14, 16, 16)
+        form.setHorizontalSpacing(12)
+        form.setVerticalSpacing(10)
 
         self.location_input = QLineEdit()
         self.location_input.setPlaceholderText("City or location")
@@ -166,6 +169,13 @@ class MainWindow(QMainWindow):
         self.api_key_input.setEnabled(False)
         self.api_key_input.setPlaceholderText("API key is required only in API mode")
 
+        self.api_key_label = QLabel("API key:")
+        self.location_label = QLabel("Location:")
+        self.keywords_label = QLabel("Keywords:")
+        self.source_label = QLabel("Source:")
+        self.access_mode_label = QLabel("Access mode:")
+        self.max_results_label = QLabel("Max results:")
+
         self.keywords_input = QLineEdit()
         self.keywords_input.setPlaceholderText("Keyword 1, Keyword 2")
 
@@ -173,12 +183,23 @@ class MainWindow(QMainWindow):
         self.max_results_input.setRange(0, 10000)
         self.max_results_input.setSpecialValueText("No limit")
 
-        form.addRow("Source:", self.source_combo)
-        form.addRow("Access mode:", self.access_mode_combo)
-        form.addRow("API key:", self.api_key_input)
-        form.addRow("Location:", self.location_input)
-        form.addRow("Keywords:", self.keywords_input)
-        form.addRow("Max results:", self.max_results_input)
+        form.addWidget(self.source_label, 0, 0)
+        form.addWidget(self.source_combo, 0, 1)
+        form.addWidget(self.access_mode_label, 0, 2)
+        form.addWidget(self.access_mode_combo, 0, 3)
+
+        form.addWidget(self.location_label, 1, 0)
+        form.addWidget(self.location_input, 1, 1)
+        form.addWidget(self.keywords_label, 1, 2)
+        form.addWidget(self.keywords_input, 1, 3)
+
+        form.addWidget(self.api_key_label, 2, 0)
+        form.addWidget(self.api_key_input, 2, 1)
+        form.addWidget(self.max_results_label, 2, 2)
+        form.addWidget(self.max_results_input, 2, 3)
+
+        form.setColumnStretch(1, 1)
+        form.setColumnStretch(3, 2)
 
         self.license_group = QGroupBox("License")
         license_layout = QHBoxLayout(self.license_group)
@@ -244,6 +265,9 @@ class MainWindow(QMainWindow):
             ["ID", "Source", "Mode", "City", "Keyword", "Status", "Found", "Started"]
         )
         self.runs_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.runs_table.setMinimumHeight(145)
+        self.runs_table.setAlternatingRowColors(True)
+        self.runs_table.horizontalHeader().setStretchLastSection(True)
         self.runs_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.runs_table.itemSelectionChanged.connect(self._load_selected_run_businesses)
         runs_layout.addWidget(self.runs_table)
@@ -256,12 +280,14 @@ class MainWindow(QMainWindow):
             ["ID", "Name", "Category", "City", "Phone", "Rating"]
         )
         self.businesses_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.businesses_table.setMinimumHeight(145)
+        self.businesses_table.setAlternatingRowColors(True)
+        self.businesses_table.horizontalHeader().setStretchLastSection(True)
         self.businesses_table.setEditTriggers(QTableWidget.NoEditTriggers)
         businesses_layout.addWidget(self.businesses_table)
 
-        root_layout.addWidget(runs_group)
-        root_layout.addWidget(businesses_group)
-        root_layout.addStretch()
+        root_layout.addWidget(runs_group, 1)
+        root_layout.addWidget(businesses_group, 1)
 
         self.setCentralWidget(central_widget)
 
@@ -290,6 +316,7 @@ class MainWindow(QMainWindow):
         is_api = self.access_mode_combo.currentData() == "api"
         self.api_key_input.setEnabled(is_api)
         self.api_key_input.setVisible(is_api)
+        self.api_key_label.setVisible(is_api)
         self._on_source_changed()
 
     def _on_source_changed(self):
