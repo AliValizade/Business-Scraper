@@ -43,6 +43,15 @@ def test_desktop_google_maps_api_key_placeholder_is_source_aware():
     assert '"API key"' in source
 
 
+def test_desktop_sidebar_uses_pyverse_logo():
+    source = _desktop_source()
+    assert "from pathlib import Path" in source
+    assert "from PySide6.QtGui import QPixmap" in source
+    assert 'self.sidebar_logo = QLabel()' in source
+    assert '"assets" / "pyverse_logo.svg"' in source
+    assert "self.sidebar_logo.setVisible(not self.sidebar_collapsed)" in source
+
+
 def test_desktop_dashboard_has_collapsible_sidebar_navigation():
     source = _desktop_source()
     assert 'self.sidebar = QWidget()' in source

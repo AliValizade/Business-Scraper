@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from PySide6.QtCore import QSettings, QThread, QSize, Qt
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
@@ -49,8 +52,8 @@ class MainWindow(QMainWindow):
         if isinstance(saved_size, QSize):
             self.resize(saved_size)
         else:
-            self.resize(1000, 700)
-        self.setMinimumSize(900, 620)
+            self.resize(1200, 760)
+        self.setMinimumSize(960, 640)
 
         self.dark_mode = str(self.settings.value("theme", "light")).lower() == "dark"
         self._apply_theme()
@@ -67,9 +70,21 @@ class MainWindow(QMainWindow):
         sidebar_layout.setContentsMargins(10, 18, 10, 18)
         sidebar_layout.setSpacing(10)
 
+        self.sidebar_logo = QLabel()
+        self.sidebar_logo.setObjectName("SidebarLogo")
+        self.sidebar_logo.setAlignment(Qt.AlignCenter)
+        self.sidebar_logo.setFixedHeight(92)
+        logo_path = Path(__file__).resolve().parents[2] / "assets" / "Logo-PyVerse.png"
+        if logo_path.exists():
+            self.sidebar_logo.setPixmap(
+                QPixmap(str(logo_path)).scaled(92, 92, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
+        sidebar_layout.addWidget(self.sidebar_logo)
+
         self.sidebar_title = QLabel("Business-Scraper")
         self.sidebar_title.setObjectName("AppTitle")
         self.sidebar_title.setAutoFillBackground(False)
+        self.sidebar_title.setAlignment(Qt.AlignCenter)
         sidebar_layout.addWidget(self.sidebar_title)
 
         self.sidebar_menu = QListWidget()
@@ -135,7 +150,8 @@ class MainWindow(QMainWindow):
         if self.dark_mode:
             self.setStyleSheet("""
                 QMainWindow, QWidget { background: #111827; color: #e5e7eb; }
-                QWidget#Sidebar { background: #0f172a; }
+                QWidget#Sidebar { background: #001128; }
+                QLabel#SidebarLogo { background: transparent; }
                 QLabel#AppTitle { background: transparent; color: white; font-size: 16pt; font-weight: 700; padding: 0; }
                 QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #f8fafc; }
                 QLabel#PageSubtitle { color: #94a3b8; }
@@ -159,7 +175,9 @@ class MainWindow(QMainWindow):
         else:
             self.setStyleSheet("""
                 QMainWindow, QWidget { background: #f5f7fb; color: #172033; }
-                QWidget#Sidebar { background: #172033; }
+                QWidget#Sidebar { background: #001128; }
+                QLabel#SidebarLogo { background: transparent; border: none; }
+                QWidget#Sidebar QLabel { background: transparent; }
                 QLabel#AppTitle { background: transparent; color: #f8fafc; font-size: 16pt; font-weight: 700; padding: 0 2px; }
                 QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #172033; }
                 QLabel#PageSubtitle { color: #64748b; }
@@ -197,7 +215,7 @@ class MainWindow(QMainWindow):
         for title, value in (("Runs", self.dashboard_runs), ("Results", self.dashboard_results)):
             box = QGroupBox(title)
             box_layout = QVBoxLayout(box)
-            value.setStyleSheet("font-size: 22pt; font-weight: 700;")
+            value.setStyleSheet("font-size: 22pt; font-weight: 700; padding-left: 8px;")
             box_layout.addWidget(value)
             summary.addWidget(box)
         layout.addLayout(summary)
@@ -395,6 +413,7 @@ class MainWindow(QMainWindow):
                 5 if self.sidebar_collapsed else 10,
                 18,
             )
+        self.sidebar_logo.setVisible(not self.sidebar_collapsed)
         self.sidebar_title.setVisible(not self.sidebar_collapsed)
         self.sidebar_status.setVisible(not self.sidebar_collapsed)
         self._refresh_sidebar_items()
