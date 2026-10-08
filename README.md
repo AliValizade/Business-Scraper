@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/pyverse_logo.png" alt="PyVerse logo" width="180" />
+  <img src="assets/Logo-PyVerse.png" alt="PyVerse logo" width="180" />
 </p>
 
 <p align="center">
@@ -19,7 +19,6 @@ Business-Scraper is a Python application for running business-data collection jo
 ## Contents
 
 - [Highlights](#highlights)
-- [Screenshots](#screenshots)
 - [Supported sources](#supported-sources)
 - [Architecture](#architecture)
 - [Technology stack](#technology-stack)
@@ -49,10 +48,6 @@ Business-Scraper is a Python application for running business-data collection jo
 - **Desktop dashboard:** inspect recent runs, browse results, configure settings, and access license controls.
 - **Operational resilience:** retry support, error handling, and browser lifecycle management.
 - **Regression tests:** a pytest suite covers key application, scraping, persistence, CLI, and export behavior.
-
-## Screenshots
-
-The desktop application includes a dashboard, scrape form, run history, results browser, settings, and license page. Screenshots can be added here as the UI stabilizes.
 
 ## Supported sources
 
