@@ -165,6 +165,7 @@ browser/
 cli/
 interfaces/
 services/
+assets/
 core/
 database/
 exporters/
