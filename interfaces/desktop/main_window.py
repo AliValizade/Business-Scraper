@@ -74,7 +74,7 @@ class MainWindow(QMainWindow):
         self.sidebar_logo.setObjectName("SidebarLogo")
         self.sidebar_logo.setAlignment(Qt.AlignCenter)
         self.sidebar_logo.setFixedHeight(92)
-        logo_path = Path(__file__).resolve().parents[2] / "assets" / "pyverse_logo.svg"
+        logo_path = Path(__file__).resolve().parents[2] / "assets" / "Logo-PyVerse.png"
         if logo_path.exists():
             self.sidebar_logo.setPixmap(
                 QPixmap(str(logo_path)).scaled(92, 92, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -151,6 +151,7 @@ class MainWindow(QMainWindow):
             self.setStyleSheet("""
                 QMainWindow, QWidget { background: #111827; color: #e5e7eb; }
                 QWidget#Sidebar { background: #0f172a; }
+                QLabel#SidebarLogo { background: transparent; }
                 QLabel#AppTitle { background: transparent; color: white; font-size: 16pt; font-weight: 700; padding: 0; }
                 QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #f8fafc; }
                 QLabel#PageSubtitle { color: #94a3b8; }
