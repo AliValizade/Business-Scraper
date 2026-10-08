@@ -48,7 +48,7 @@ def test_desktop_sidebar_uses_pyverse_logo():
     assert "from pathlib import Path" in source
     assert "from PySide6.QtGui import QPixmap" in source
     assert 'self.sidebar_logo = QLabel()' in source
-    assert '"assets" / "pyverse_logo.svg"' in source
+    assert '"assets" / "Logo-PyVerse.png"' in source
     assert "self.sidebar_logo.setVisible(not self.sidebar_collapsed)" in source
 
 
@@ -74,7 +74,7 @@ def test_desktop_dashboard_uses_stacked_pages():
     assert "self._build_results_page()" in source
     assert "self._build_settings_page()" in source
     assert "self._build_license_page()" in source
-    assert "self.resize(1000, 700)" in source
+    assert "self.resize(1200, 760)" in source
 
 
 def test_desktop_supports_light_and_dark_themes():
