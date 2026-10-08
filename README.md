@@ -1,6 +1,6 @@
 # Business-Scraper
 
-A modular, database-first business scraping engine with Google Maps and Neshan as the current production sources.
+A modular, database-first business scraping platform with Google Maps and Neshan as the current production sources, plus a PySide6 desktop interface for running and inspecting scrape jobs.
 
 ## Current scope
 
@@ -11,7 +11,7 @@ Each implemented source can expose Web and API access independently.
 ## Architecture
 
 ```text
-CLI
+Desktop GUI / CLI
  ↓
 Application
  ↓
@@ -58,6 +58,9 @@ Core layers:
 - Run history and inspection
 - CSV, JSON, and Excel export
 - Run-based export
+- PySide6 desktop dashboard with collapsible navigation
+- Scrape, run history, results, settings, and license pages
+- Light/dark desktop themes
 - Professional Excel summary for run exports
 - Retry and error isolation
 - Browser lifecycle management
@@ -78,6 +81,16 @@ Install dependencies:
 pip install -r requirements.txt
 playwright install chromium
 ```
+
+## Desktop application
+
+Launch the desktop dashboard:
+
+```bash
+python desktop.py
+```
+
+The desktop interface provides source/access-mode selection, scrape controls, progress feedback, run history, run results, and CSV/JSON/Excel export.
 
 ## CLI
 
@@ -150,6 +163,8 @@ The project is developed incrementally with regression tests covering the core p
 app/
 browser/
 cli/
+interfaces/
+services/
 core/
 database/
 exporters/
@@ -176,7 +191,6 @@ README.md
 
 The following are intentionally outside the current v1 scope:
 
-- GUI
 - CRM / lead management
 - AI enrichment
 - additional scraping sources beyond the current Google Maps and Neshan adapters
