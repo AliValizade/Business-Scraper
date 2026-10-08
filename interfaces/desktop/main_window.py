@@ -176,6 +176,8 @@ class MainWindow(QMainWindow):
             self.setStyleSheet("""
                 QMainWindow, QWidget { background: #f5f7fb; color: #172033; }
                 QWidget#Sidebar { background: #001128; }
+                QLabel#SidebarLogo { background: transparent; border: none; }
+                QWidget#Sidebar QLabel { background: transparent; }
                 QLabel#AppTitle { background: transparent; color: #f8fafc; font-size: 16pt; font-weight: 700; padding: 0 2px; }
                 QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #172033; }
                 QLabel#PageSubtitle { color: #64748b; }
