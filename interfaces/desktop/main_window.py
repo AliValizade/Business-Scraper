@@ -78,8 +78,8 @@ class MainWindow(QMainWindow):
         self.sidebar_menu.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.sidebar_menu.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.sidebar_menu.setUniformItemSizes(True)
-        self.sidebar_menu.setMinimumHeight(6 * 44 + 8)
-        self.sidebar_menu.setMaximumHeight(6 * 44 + 8)
+        self.sidebar_menu.setMinimumHeight(330)
+        self.sidebar_menu.setMaximumHeight(330)
         self._refresh_sidebar_items()
         self.sidebar_menu.currentRowChanged.connect(self._navigate_to_page)
         sidebar_layout.addWidget(self.sidebar_menu)
@@ -273,21 +273,8 @@ class MainWindow(QMainWindow):
         toolbar = QHBoxLayout()
         self.refresh_runs_button = QPushButton("Refresh Runs")
         self.refresh_runs_button.clicked.connect(self._load_runs)
-        self.export_format_combo = QComboBox()
-        self.export_format_combo.addItems(["csv", "excel", "json"])
-        saved_format = self.settings.value("export_format", "csv")
-        index = self.export_format_combo.findText(str(saved_format))
-        if index >= 0:
-            self.export_format_combo.setCurrentIndex(index)
-        self.export_format_combo.currentTextChanged.connect(
-            lambda value: self.settings.setValue("export_format", value)
-        )
-        self.export_button = QPushButton("Export Selected Run")
-        self.export_button.clicked.connect(self._export_selected_run)
         toolbar.addWidget(self.refresh_runs_button)
         toolbar.addStretch()
-        toolbar.addWidget(self.export_format_combo)
-        toolbar.addWidget(self.export_button)
         layout.addLayout(toolbar)
         self.runs_table = QTableWidget(0, 8)
         self.runs_table.setHorizontalHeaderLabels(
@@ -303,6 +290,24 @@ class MainWindow(QMainWindow):
     def _build_results_page(self):
         page = QWidget()
         layout = QVBoxLayout(page)
+
+        toolbar = QHBoxLayout()
+        self.export_format_combo = QComboBox()
+        self.export_format_combo.addItems(["csv", "excel", "json"])
+        saved_format = self.settings.value("export_format", "csv")
+        index = self.export_format_combo.findText(str(saved_format))
+        if index >= 0:
+            self.export_format_combo.setCurrentIndex(index)
+        self.export_format_combo.currentTextChanged.connect(
+            lambda value: self.settings.setValue("export_format", value)
+        )
+        self.export_button = QPushButton("Export Selected Run")
+        self.export_button.clicked.connect(self._export_selected_run)
+        toolbar.addStretch()
+        toolbar.addWidget(self.export_format_combo)
+        toolbar.addWidget(self.export_button)
+        layout.addLayout(toolbar)
+
         self.businesses_table = QTableWidget(0, 6)
         self.businesses_table.setHorizontalHeaderLabels(["ID", "Name", "Category", "City", "Phone", "Rating"])
         self.businesses_table.setSelectionBehavior(QTableWidget.SelectRows)
@@ -382,7 +387,7 @@ class MainWindow(QMainWindow):
 
     def _toggle_sidebar(self):
         self.sidebar_collapsed = not self.sidebar_collapsed
-        self.sidebar.setFixedWidth(72 if self.sidebar_collapsed else 220)
+        self.sidebar.setFixedWidth(68 if self.sidebar_collapsed else 220)
         self.sidebar_title.setVisible(not self.sidebar_collapsed)
         self.sidebar_status.setVisible(not self.sidebar_collapsed)
         self._refresh_sidebar_items()
