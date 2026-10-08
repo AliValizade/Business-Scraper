@@ -48,11 +48,11 @@ def test_desktop_dashboard_has_collapsible_sidebar_navigation():
     assert 'self.sidebar = QWidget()' in source
     assert 'self.sidebar_menu.addItems(\n            ["Dashboard", "Scrape", "Runs", "Results", "Settings", "License"]\n        )' in source
     assert "self.sidebar_menu.setIconSize(QSize(22, 22))" in source
-    assert "self.sidebar_menu.setMinimumHeight(6 * 44 + 8)" in source
+    assert "self.sidebar_menu.setMinimumHeight(330)" in source
     assert "Qt.AlignCenter if self.sidebar_collapsed" in source
     assert "item.setIcon(self.style().standardIcon(self._sidebar_icons[index]))" in source
     assert 'self.menu_button = QPushButton("☰")' in source
-    assert 'self.sidebar.setFixedWidth(72 if self.sidebar_collapsed else 220)' in source
+    assert 'self.sidebar.setFixedWidth(68 if self.sidebar_collapsed else 220)' in source
 
 
 def test_desktop_dashboard_uses_stacked_pages():
@@ -87,3 +87,20 @@ def test_run_rows_open_results_directly():
     source = _desktop_source()
     assert "self.runs_table.cellClicked.connect(self._open_run_results)" in source
     assert "self.sidebar_menu.setCurrentRow(3)" in source
+
+
+def test_desktop_export_controls_live_on_results_page():
+    source = _desktop_source()
+    results_start = source.index("    def _build_results_page(self):")
+    settings_start = source.index("    def _build_settings_page(self):")
+    results_source = source[results_start:settings_start]
+
+    runs_start = source.index("    def _build_runs_page(self):")
+    results_start = source.index("    def _build_results_page(self):")
+    runs_source = source[runs_start:results_start]
+
+    assert 'self.export_format_combo.addItems(["csv", "excel", "json"])' in results_source
+    assert 'self.export_button = QPushButton("Export Selected Run")' in results_source
+    assert "self.export_button.clicked.connect(self._export_selected_run)" in results_source
+    assert 'self.export_format_combo.addItems(["csv", "excel", "json"])' not in runs_source
+    assert 'self.export_button = QPushButton("Export Selected Run")' not in runs_source
