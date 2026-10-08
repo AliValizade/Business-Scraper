@@ -78,8 +78,8 @@ class MainWindow(QMainWindow):
         self.sidebar_menu.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.sidebar_menu.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.sidebar_menu.setUniformItemSizes(True)
-        self.sidebar_menu.setMinimumHeight(330)
-        self.sidebar_menu.setMaximumHeight(330)
+        self.sidebar_menu.setMinimumHeight(360)
+        self.sidebar_menu.setMaximumHeight(360)
         self._refresh_sidebar_items()
         self.sidebar_menu.currentRowChanged.connect(self._navigate_to_page)
         sidebar_layout.addWidget(self.sidebar_menu)
@@ -165,7 +165,7 @@ class MainWindow(QMainWindow):
                 QLabel#PageSubtitle { color: #64748b; }
                 QPushButton#MenuButton { background: transparent; color: #172033; border: none; font-size: 18pt; padding: 4px 10px; }
                 QPushButton#MenuButton:hover { background: #e2e8f0; border-radius: 8px; }
-                QListWidget#SidebarMenu { background: transparent; border: none; color: #e2e8f0; outline: none; padding: 8px; }
+                QListWidget#SidebarMenu { background: transparent; border: none; color: #e2e8f0; outline: none; padding: 0; }
                 QListWidget#SidebarMenu::item { padding: 12px 10px; margin: 2px 0; border-radius: 8px; }
                 QListWidget#SidebarMenu::item:selected { background: #2563eb; color: white; }
                 QGroupBox { background: white; border: 1px solid #dfe5ef; border-radius: 10px; margin-top: 10px; padding: 14px; }
@@ -388,6 +388,13 @@ class MainWindow(QMainWindow):
     def _toggle_sidebar(self):
         self.sidebar_collapsed = not self.sidebar_collapsed
         self.sidebar.setFixedWidth(68 if self.sidebar_collapsed else 220)
+        if self.sidebar.layout() is not None:
+            self.sidebar.layout().setContentsMargins(
+                5 if self.sidebar_collapsed else 10,
+                18,
+                5 if self.sidebar_collapsed else 10,
+                18,
+            )
         self.sidebar_title.setVisible(not self.sidebar_collapsed)
         self.sidebar_status.setVisible(not self.sidebar_collapsed)
         self._refresh_sidebar_items()
