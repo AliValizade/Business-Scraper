@@ -48,11 +48,12 @@ def test_desktop_dashboard_has_collapsible_sidebar_navigation():
     assert 'self.sidebar = QWidget()' in source
     assert 'self.sidebar_menu.addItems(\n            ["Dashboard", "Scrape", "Runs", "Results", "Settings", "License"]\n        )' in source
     assert "self.sidebar_menu.setIconSize(QSize(22, 22))" in source
-    assert "self.sidebar_menu.setMinimumHeight(330)" in source
+    assert "self.sidebar_menu.setMinimumHeight(360)" in source
     assert "Qt.AlignCenter if self.sidebar_collapsed" in source
     assert "item.setIcon(self.style().standardIcon(self._sidebar_icons[index]))" in source
     assert 'self.menu_button = QPushButton("☰")' in source
     assert 'self.sidebar.setFixedWidth(68 if self.sidebar_collapsed else 220)' in source
+    assert "5 if self.sidebar_collapsed else 10" in source
 
 
 def test_desktop_dashboard_uses_stacked_pages():
