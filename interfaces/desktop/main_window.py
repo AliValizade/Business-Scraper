@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from PySide6.QtCore import QSettings, QThread, QSize, Qt
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
@@ -67,9 +70,21 @@ class MainWindow(QMainWindow):
         sidebar_layout.setContentsMargins(10, 18, 10, 18)
         sidebar_layout.setSpacing(10)
 
+        self.sidebar_logo = QLabel()
+        self.sidebar_logo.setObjectName("SidebarLogo")
+        self.sidebar_logo.setAlignment(Qt.AlignCenter)
+        self.sidebar_logo.setFixedHeight(92)
+        logo_path = Path(__file__).resolve().parents[2] / "assets" / "pyverse_logo.svg"
+        if logo_path.exists():
+            self.sidebar_logo.setPixmap(
+                QPixmap(str(logo_path)).scaled(92, 92, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
+        sidebar_layout.addWidget(self.sidebar_logo)
+
         self.sidebar_title = QLabel("Business-Scraper")
         self.sidebar_title.setObjectName("AppTitle")
         self.sidebar_title.setAutoFillBackground(False)
+        self.sidebar_title.setAlignment(Qt.AlignCenter)
         sidebar_layout.addWidget(self.sidebar_title)
 
         self.sidebar_menu = QListWidget()
@@ -395,6 +410,7 @@ class MainWindow(QMainWindow):
                 5 if self.sidebar_collapsed else 10,
                 18,
             )
+        self.sidebar_logo.setVisible(not self.sidebar_collapsed)
         self.sidebar_title.setVisible(not self.sidebar_collapsed)
         self.sidebar_status.setVisible(not self.sidebar_collapsed)
         self._refresh_sidebar_items()
