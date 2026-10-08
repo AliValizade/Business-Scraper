@@ -52,8 +52,8 @@ class MainWindow(QMainWindow):
         if isinstance(saved_size, QSize):
             self.resize(saved_size)
         else:
-            self.resize(1000, 700)
-        self.setMinimumSize(900, 620)
+            self.resize(1200, 760)
+        self.setMinimumSize(960, 640)
 
         self.dark_mode = str(self.settings.value("theme", "light")).lower() == "dark"
         self._apply_theme()
@@ -215,7 +215,7 @@ class MainWindow(QMainWindow):
         for title, value in (("Runs", self.dashboard_runs), ("Results", self.dashboard_results)):
             box = QGroupBox(title)
             box_layout = QVBoxLayout(box)
-            value.setStyleSheet("font-size: 22pt; font-weight: 700;")
+            value.setStyleSheet("font-size: 22pt; font-weight: 700; padding-left: 8px;")
             box_layout.addWidget(value)
             summary.addWidget(box)
         layout.addLayout(summary)
