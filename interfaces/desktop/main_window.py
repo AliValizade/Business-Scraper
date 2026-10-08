@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
         if self.dark_mode:
             self.setStyleSheet("""
                 QMainWindow, QWidget { background: #111827; color: #e5e7eb; }
-                QWidget#Sidebar { background: #0f172a; }
+                QWidget#Sidebar { background: #001128; }
                 QLabel#SidebarLogo { background: transparent; }
                 QLabel#AppTitle { background: transparent; color: white; font-size: 16pt; font-weight: 700; padding: 0; }
                 QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #f8fafc; }
@@ -175,7 +175,7 @@ class MainWindow(QMainWindow):
         else:
             self.setStyleSheet("""
                 QMainWindow, QWidget { background: #f5f7fb; color: #172033; }
-                QWidget#Sidebar { background: #172033; }
+                QWidget#Sidebar { background: #001128; }
                 QLabel#AppTitle { background: transparent; color: #f8fafc; font-size: 16pt; font-weight: 700; padding: 0 2px; }
                 QLabel#PageTitle { font-size: 20pt; font-weight: 700; color: #172033; }
                 QLabel#PageSubtitle { color: #64748b; }
